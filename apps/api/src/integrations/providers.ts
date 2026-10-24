@@ -13,6 +13,22 @@ export interface PayoutResult {
   message?: string;
 }
 
+/** A request-to-pay: the provider prompts the payer's phone to approve a debit. */
+export interface CollectionPrompt {
+  amount: string;
+  msisdn: string;
+  /** Shown on the payer's phone, e.g. the loan number. */
+  reference: string;
+  /** Our request id; the provider echoes it back so the result can be matched. */
+  externalId: string;
+}
+
+export interface CollectionPromptResult {
+  status: 'pending' | 'failed';
+  providerRef: string;
+  message?: string;
+}
+
 export interface InboundPayment {
   externalRef: string;
   accountRef: string;
@@ -29,12 +45,17 @@ export interface InboundPayment {
 export interface PaymentProviderAdapter {
   readonly channel: Channel;
   payout(req: PayoutRequest): Promise<PayoutResult>;
+  requestToPay(req: CollectionPrompt): Promise<CollectionPromptResult>;
+  /** True when the adapter simulates the provider (no real money moves). */
+  readonly sandbox: boolean;
   verifySignature(rawBody: Buffer, signature: string | undefined): boolean;
   parseCallback(body: unknown): InboundPayment;
 }
 
 /** Sandbox adapter: payouts succeed immediately; callbacks are HMAC-SHA256 signed with MOMO_WEBHOOK_SECRET. */
 export class SandboxMobileMoneyAdapter implements PaymentProviderAdapter {
+  readonly sandbox = true;
+
   constructor(
     readonly channel: Channel,
     private readonly secret = process.env.MOMO_WEBHOOK_SECRET ?? 'dev-webhook-secret',
@@ -46,6 +67,22 @@ export class SandboxMobileMoneyAdapter implements PaymentProviderAdapter {
       providerRef: `SBX-${randomBytes(5).toString('hex').toUpperCase()}`,
       message: `Sandbox payout of K${req.amount} to ${req.destination}`,
     };
+  }
+
+  async requestToPay(req: CollectionPrompt): Promise<CollectionPromptResult> {
+    return {
+      status: 'pending',
+      providerRef: `SBX-RTP-${randomBytes(5).toString('hex').toUpperCase()}`,
+      message: `Approve K${req.amount} for ${req.reference} on ${req.msisdn}`,
+    };
+  }
+
+  /**
+   * How the simulated payer responds to the prompt. Numbers ending in 0000 decline,
+   * so the failure path can be demonstrated; everything else approves.
+   */
+  sandboxOutcome(msisdn: string): { approved: boolean; reason?: string } {
+    return msisdn.endsWith('0000') ? { approved: false, reason: 'The payment was declined on the phone' } : { approved: true };
   }
 
   sign(rawBody: Buffer | string): string {
@@ -76,10 +113,16 @@ export class SandboxMobileMoneyAdapter implements PaymentProviderAdapter {
 
 /** Bank and cash payouts are executed outside the system and recorded by reference. */
 class ManualAdapter implements PaymentProviderAdapter {
+  readonly sandbox = false;
+
   constructor(readonly channel: Channel) {}
 
   async payout(req: PayoutRequest): Promise<PayoutResult> {
     return { status: 'completed', providerRef: req.reference };
+  }
+
+  async requestToPay(): Promise<CollectionPromptResult> {
+    throw new Error('Bank and cash payments cannot be requested from a phone');
   }
 
   verifySignature(): boolean {

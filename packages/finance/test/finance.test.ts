@@ -9,6 +9,7 @@ import {
   portfolioAtRisk,
   ServicingItem,
   settlementQuote,
+  settlementWaivers,
   sum,
 } from '../src';
 
@@ -174,6 +175,25 @@ describe('early settlement', () => {
     expect(q.interest).toBe('385.09'); // instalment 1 (due) + instalment 2 (current period)
     expect(q.interestWaived).toBe('169.88');
     expect(q.total).toBe('2716.92');
+  });
+
+  it('clears the loan exactly once the waivers are applied', () => {
+    const asOf = '2026-02-20';
+    const q = settlementQuote(items(), asOf);
+    const waivers = settlementWaivers(items(), asOf);
+    expect(sum(waivers.map((w) => w.interest)).toFixed(2)).toBe(q.interestWaived);
+    const adjusted = items().map((i) => {
+      const w = waivers.find((x) => x.itemId === i.id);
+      return w ? { ...i, due: { ...i.due, interest: dec(i.due.interest).minus(w.interest).toFixed(2) } } : i;
+    });
+    const result = allocatePayment(q.total, adjusted);
+    expect(result.unallocated).toBe('0.00');
+    const paidAfter = adjusted.map((i) => {
+      const paid = { ...i.paid };
+      for (const a of result.allocations.filter((x) => x.itemId === i.id)) paid[a.component] = dec(paid[a.component]).plus(a.amount).toFixed(2);
+      return { ...i, paid };
+    });
+    expect(loanPosition(paidAfter, asOf).paidOff).toBe(true);
   });
 });
 

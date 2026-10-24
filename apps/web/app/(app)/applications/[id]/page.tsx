@@ -15,6 +15,7 @@ import { dateTime, kwacha, pct } from "@/lib/format";
 interface Application {
   id: string;
   applicationNumber: string;
+  channel: "branch" | "self_service";
   amount: string;
   term: number;
   purpose: string;
@@ -95,7 +96,9 @@ export default function ApplicationPage() {
         title={`${a.customer.firstName} ${a.customer.lastName} · ${kwacha(a.amount)}`}
         description={
           <span className="flex flex-wrap items-center gap-2">
-            {a.applicationNumber} · {a.product.name} · submitted by {a.officerName} on {dateTime(a.submittedAt)} <StatusBadge status={a.status} />
+            {a.applicationNumber} · {a.product.name} · {a.channel === "self_service" ? "applied online by the borrower" : `submitted by ${a.officerName}`} on {dateTime(a.submittedAt)}{" "}
+            <StatusBadge status={a.status} />
+            {a.channel === "self_service" && <Badge tone="violet">Online</Badge>}
           </span>
         }
       />

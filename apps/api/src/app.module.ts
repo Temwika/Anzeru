@@ -13,6 +13,8 @@ import { CustomersService } from './customers/customers.service';
 import { DatabaseModule } from './db/database';
 import { AccountingController } from './accounting/accounting.controller';
 import { BorrowerController } from './borrower/borrower.controller';
+import { CollectionsService } from './borrower/collections.service';
+import { PublicController } from './borrower/public.controller';
 import { HealthController } from './health.controller';
 import { WebhooksController } from './integrations/webhooks.controller';
 import { JobsController, JobsService } from './jobs/jobs.service';
@@ -53,6 +55,7 @@ export function jwtSecret(): string {
     JobsController,
     WebhooksController,
     BorrowerController,
+    PublicController,
   ],
   providers: [
     CustomersService,
@@ -61,6 +64,7 @@ export function jwtSecret(): string {
     PaymentsService,
     ReportsService,
     JobsService,
+    CollectionsService,
     { provide: APP_GUARD, useClass: ThrottlerGuard },
     { provide: APP_GUARD, useClass: AuthGuard },
     { provide: APP_INTERCEPTOR, useClass: EnvelopeInterceptor },

@@ -1,6 +1,6 @@
 import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { PaymentCreateInput } from '@anzelu/contracts';
-import { allocatePayment, Component, dec, m, sum, todayIn } from '@anzelu/finance';
+import { allocatePayment, Component, dec, m, settlementQuote, settlementWaivers, sum, todayIn } from '@anzelu/finance';
 import { aliasedTable, and, desc, eq, sql } from 'drizzle-orm';
 import { AuthUser, scope, tenantOf } from '../common/auth';
 import { BusinessRuleError, Paged, paging } from '../common/http';
@@ -30,6 +30,12 @@ export interface RecordPaymentOptions {
   /** Set for system-originated payments such as verified mobile-money callbacks. */
   systemTenantId?: string;
   ip?: string;
+  /**
+   * Early settlement: future-period interest is waived on the schedule in the same
+   * transaction, so the settlement amount clears the loan exactly. The amount must
+   * cover the settlement quote as at the payment date.
+   */
+  settlement?: boolean;
 }
 
 @Injectable()
@@ -134,7 +140,24 @@ export class PaymentsService {
         if (!loan) throw new NotFoundException('Loan not found');
         if (loan.status !== 'active') throw new BusinessRuleError('LOAN_NOT_ACTIVE', `Payments can only be received on active loans (this one is ${loan.status.replace('_', ' ')})`);
 
-        const rows = await scheduleRows(tx, tenantId, loan.id);
+        let rows = await scheduleRows(tx, tenantId, loan.id);
+        let interestWaived = '0.00';
+        let waivers: { itemId: string; interest: string }[] | null = null;
+        if (opts.settlement) {
+          const quote = settlementQuote(rows.map(toServicingItem), receivedOn);
+          if (dec(input.amount).lt(dec(quote.total))) {
+            throw new BusinessRuleError('SETTLEMENT_SHORT', `Settling this loan today takes K${quote.total}`);
+          }
+          waivers = settlementWaivers(rows.map(toServicingItem), receivedOn).map((w) => ({ itemId: w.itemId, interest: w.interest }));
+          for (const w of waivers) {
+            await tx
+              .update(loanScheduleItems)
+              .set({ interestDue: sql`${loanScheduleItems.interestDue} - ${w.interest}` })
+              .where(eq(loanScheduleItems.id, w.itemId));
+          }
+          interestWaived = quote.interestWaived;
+          rows = await scheduleRows(tx, tenantId, loan.id);
+        }
         const result = allocatePayment(input.amount, rows.map(toServicingItem));
 
         const [payment] = await tx
@@ -150,6 +173,7 @@ export class PaymentsService {
             idempotencyKey: input.idempotencyKey,
             receivedOn,
             recordedBy: user?.id ?? null,
+            interestWaivers: waivers,
           })
           .returning();
 
@@ -184,7 +208,7 @@ export class PaymentsService {
           action: 'payment.recorded',
           entityType: 'payment',
           entityId: payment.id,
-          data: { loanId: loan.id, amount: payment.amount, channel: input.channel, allocated: result.byComponent, unallocated: result.unallocated, journalId },
+          data: { loanId: loan.id, amount: payment.amount, channel: input.channel, allocated: result.byComponent, unallocated: result.unallocated, journalId, ...(opts.settlement ? { settlement: true, interestWaived } : {}) },
           ip: opts.ip,
         });
 
@@ -296,6 +320,13 @@ export class PaymentsService {
       if (payment.status === 'reversed') throw new BusinessRuleError('ALREADY_REVERSED', 'This payment has already been reversed');
       const allocations = await tx.select().from(paymentAllocations).where(eq(paymentAllocations.paymentId, payment.id));
       await this.applyToSchedule(tx, allocations, -1);
+      // An early settlement waived future interest; reversing it puts that interest back.
+      for (const w of payment.interestWaivers ?? []) {
+        await tx
+          .update(loanScheduleItems)
+          .set({ interestDue: sql`${loanScheduleItems.interestDue} + ${w.interest}` })
+          .where(eq(loanScheduleItems.id, w.itemId));
+      }
 
       const date = todayIn(user.timezone);
       const journalId = await this.ledger.reverse(tx, tenantId, payment.journalEntryId!, date, `Reversal of ${payment.receiptNumber}: ${r.reason}`, user.id);

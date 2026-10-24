@@ -205,6 +205,27 @@ export function settlementQuote(items: ServicingItem[], asOf: string): Settlemen
   };
 }
 
+/**
+ * The per-instalment interest that `settlementQuote` waives: outstanding
+ * interest on every instalment after the current period. Applying these to the
+ * schedule before allocating the settlement amount leaves the loan fully paid.
+ */
+export function settlementWaivers(items: ServicingItem[], asOf: string): { itemId: string; installmentNo: number; interest: string }[] {
+  const sorted = [...items].sort((a, b) => a.dueDate.localeCompare(b.dueDate) || a.installmentNo - b.installmentNo);
+  const waivers: { itemId: string; installmentNo: number; interest: string }[] = [];
+  let currentPeriodCounted = false;
+  for (const item of sorted) {
+    if (item.dueDate <= asOf) continue;
+    if (!currentPeriodCounted) {
+      currentPeriodCounted = true;
+      continue;
+    }
+    const interest = outstandingOf(item).interest;
+    if (interest.gt(0)) waivers.push({ itemId: item.id, installmentNo: item.installmentNo, interest: m(interest) });
+  }
+  return waivers;
+}
+
 /** One-off late penalty: a percentage of the overdue instalment balance. */
 export function latePenalty(overdueAmount: MoneyLike, penaltyPct: MoneyLike): string {
   return m(dec(overdueAmount).times(dec(penaltyPct)).div(100));

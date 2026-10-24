@@ -1,5 +1,5 @@
 import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
-import { ApplicationCreateInput, ApplicationStatus } from '@anzelu/contracts';
+import { ApplicationCreateInput, ApplicationStatus, BorrowerApplicationInput } from '@anzelu/contracts';
 import { assessAffordability, dec, generateSchedule, m, todayIn } from '@anzelu/finance';
 import { aliasedTable, and, desc, eq, ilike, inArray, or, sql } from 'drizzle-orm';
 import { assertBranchAccess, AuthUser, scope, tenantOf } from '../common/auth';
@@ -39,6 +39,7 @@ export class ApplicationsService {
           amount: loanApplications.amount,
           term: loanApplications.term,
           status: loanApplications.status,
+          channel: loanApplications.channel,
           submittedAt: loanApplications.submittedAt,
           customerId: customers.id,
           customerName: sql<string>`${customers.firstName} || ' ' || ${customers.lastName}`,
@@ -121,7 +122,41 @@ export class ApplicationsService {
       .where(and(eq(customers.id, input.customerId), scope(user, customers.tenantId, customers.branchId)));
     if (!customer) throw new BusinessRuleError('INVALID_CUSTOMER', 'Select a customer from your branch');
     assertBranchAccess(user, customer.branchId);
+    return this.submit(user, tenantId, customer, input, 'branch', ip, submittedOn);
+  }
 
+  /**
+   * A borrower applying from the portal, always for their own customer record.
+   * It joins the same credit queue as branch applications, so scoring,
+   * maker-checker and approval limits apply unchanged.
+   */
+  async createForBorrower(user: AuthUser, input: BorrowerApplicationInput, ip?: string) {
+    const tenantId = tenantOf(user);
+    if (!user.customerId) throw new NotFoundException('No customer profile is linked to this login');
+    const [customer] = await this.db
+      .select()
+      .from(customers)
+      .where(and(eq(customers.id, user.customerId), eq(customers.tenantId, tenantId)));
+    if (!customer) throw new NotFoundException('No customer profile is linked to this login');
+    const [inFlight] = await this.db
+      .select({ applicationNumber: loanApplications.applicationNumber })
+      .from(loanApplications)
+      .where(and(eq(loanApplications.tenantId, tenantId), eq(loanApplications.customerId, customer.id), eq(loanApplications.status, 'submitted')));
+    if (inFlight) {
+      throw new BusinessRuleError('APPLICATION_IN_REVIEW', `Application ${inFlight.applicationNumber} is still being reviewed; we will let you know the outcome first`);
+    }
+    return this.submit(user, tenantId, customer, { ...input, customerId: customer.id }, 'self_service', ip);
+  }
+
+  private async submit(
+    user: AuthUser,
+    tenantId: string,
+    customer: typeof customers.$inferSelect,
+    input: ApplicationCreateInput,
+    channel: 'branch' | 'self_service',
+    ip?: string,
+    submittedOn?: Date,
+  ) {
     const [product] = await this.db
       .select()
       .from(loanProducts)
@@ -153,6 +188,7 @@ export class ApplicationsService {
           monthlyIncome: m(input.monthlyIncome),
           monthlyExpenses: m(input.monthlyExpenses),
           existingDebtRepayments: m(input.existingDebtRepayments),
+          channel,
           assessment,
           submittedBy: user.id,
           ...(submittedOn ? { submittedAt: submittedOn } : {}),
@@ -167,7 +203,7 @@ export class ApplicationsService {
         action: 'application.submitted',
         entityType: 'loan_application',
         entityId: app.id,
-        data: { applicationNumber: app.applicationNumber, amount: app.amount, score: assessment.score, recommendation: assessment.recommendation },
+        data: { applicationNumber: app.applicationNumber, amount: app.amount, channel, score: assessment.score, recommendation: assessment.recommendation },
         ip,
       });
       return { ...app, assessment };

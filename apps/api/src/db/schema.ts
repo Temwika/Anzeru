@@ -52,6 +52,8 @@ export const componentEnum = pgEnum('allocation_component', ['penalty', 'fee', '
 export const approvalStatusEnum = pgEnum('approval_status', ['pending', 'approved', 'rejected']);
 export const disbursementStatusEnum = pgEnum('disbursement_status', ['requested', 'completed', 'rejected']);
 export const paymentStatusEnum = pgEnum('payment_status', ['posted', 'reversed']);
+export const applicationChannelEnum = pgEnum('application_channel', ['branch', 'self_service']);
+export const collectionStatusEnum = pgEnum('collection_status', ['pending', 'succeeded', 'failed']);
 export const activityTypeEnum = pgEnum('collection_activity_type', ['call', 'sms', 'visit', 'promise_to_pay', 'note']);
 
 // ── Tenancy ──────────────────────────────────────────────────────────────────
@@ -230,6 +232,8 @@ export const loanApplications = pgTable(
     monthlyExpenses: money('monthly_expenses').notNull(),
     existingDebtRepayments: money('existing_debt_repayments').notNull(),
     status: applicationStatusEnum('status').notNull().default('submitted'),
+    /** Where the application came from: keyed in at a branch, or submitted by the borrower online. */
+    channel: applicationChannelEnum('channel').notNull().default('branch'),
     assessment: jsonb('assessment').notNull(),
     submittedBy: uuid('submitted_by').notNull(),
     submittedAt: timestamp('submitted_at', { withTimezone: true }).notNull().defaultNow(),
@@ -377,6 +381,8 @@ export const payments = pgTable(
     receivedOn: date('received_on', { mode: 'string' }).notNull(),
     recordedBy: uuid('recorded_by'),
     journalEntryId: uuid('journal_entry_id'),
+    /** Early-settlement interest waived per instalment, restored if the payment is reversed. */
+    interestWaivers: jsonb('interest_waivers').$type<{ itemId: string; interest: string }[]>(),
     createdAt: createdAt(),
   },
   (t) => [
@@ -385,6 +391,35 @@ export const payments = pgTable(
     index('payments_loan_idx').on(t.loanId),
     check('payments_amount_positive', sql`amount > 0`),
   ],
+);
+
+/**
+ * Borrower-initiated mobile-money collections (request-to-pay). The provider
+ * prompts the borrower's phone; once they approve, the payment is posted with
+ * the request id as its idempotency key, so a request can never post twice.
+ */
+export const collectionRequests = pgTable(
+  'collection_requests',
+  {
+    id: pk(),
+    tenantId: tenantRef(),
+    loanId: uuid('loan_id')
+      .notNull()
+      .references(() => loans.id),
+    requestedBy: uuid('requested_by').notNull(),
+    channel: channelEnum('channel').notNull(),
+    msisdn: varchar('msisdn', { length: 15 }).notNull(),
+    amount: money('amount').notNull(),
+    /** Settlement requests waive future interest when they post; instalment requests do not. */
+    settlement: boolean('settlement').notNull().default(false),
+    status: collectionStatusEnum('status').notNull().default('pending'),
+    providerRef: text('provider_ref'),
+    paymentId: uuid('payment_id'),
+    failureReason: text('failure_reason'),
+    createdAt: createdAt(),
+    completedAt: timestamp('completed_at', { withTimezone: true }),
+  },
+  (t) => [index('collection_requests_loan_idx').on(t.tenantId, t.loanId), check('collection_requests_amount_positive', sql`amount > 0`)],
 );
 
 export const paymentAllocations = pgTable(

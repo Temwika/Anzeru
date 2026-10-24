@@ -15,6 +15,13 @@
       "when": 1792825269434,
       "tag": "0001_ledger_immutability",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1792836086950,
+      "tag": "0002_self_service",
+      "breakpoints": true
     }
   ]
 }

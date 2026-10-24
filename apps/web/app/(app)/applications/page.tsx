@@ -14,6 +14,7 @@ interface Row {
   amount: string;
   term: number;
   status: string;
+  channel: "branch" | "self_service";
   submittedAt: string;
   customerId: string;
   customerName: string;
@@ -93,7 +94,10 @@ export default function ApplicationsPage() {
                   <Link href={`/applications/${a.id}`} className="font-medium text-slate-900 hover:text-brand-700">
                     {a.applicationNumber}
                   </Link>
-                  <span className="block text-xs text-slate-500">{shortDate(a.submittedAt)}</span>
+                  <span className="flex items-center gap-1.5 text-xs text-slate-500">
+                    {shortDate(a.submittedAt)}
+                    {a.channel === "self_service" && <Badge tone="violet">Online</Badge>}
+                  </span>
                 </Td>
                 <Td>
                   <Link href={`/customers/${a.customerId}`} className="hover:text-brand-700">

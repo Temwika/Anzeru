@@ -31,8 +31,14 @@ async function waitForHealth(timeoutMs = 120_000) {
   throw new Error('API did not start');
 }
 
-/** A signed-in client with its own cookie jar. */
-async function as(email) {
+/** A signed-in client with its own cookie jar, reused per user so the login rate limit is never hit. */
+const sessions = new Map();
+function as(email) {
+  if (!sessions.has(email)) sessions.set(email, signIn(email));
+  return sessions.get(email);
+}
+
+async function signIn(email) {
   const res = await fetch(`${BASE}/api/v1/auth/login`, {
     method: 'POST',
     headers: { 'content-type': 'application/json' },
@@ -255,5 +261,107 @@ describe('lending lifecycle', () => {
     const chain = await auditor.get('/audit/verify');
     assert.equal(chain.data.valid, true, JSON.stringify(chain.data));
     assert.ok(chain.data.checked > 100);
+  });
+});
+
+describe('borrower self-service', () => {
+  const s = {};
+  /** Polls a mobile-money prompt until the (sandbox) provider settles it. */
+  async function settled(client, id) {
+    for (let i = 0; i < 40; i++) {
+      const r = await client.get(`/borrower/payment-requests/${id}`);
+      if (r.data.status !== 'pending') return r.data;
+      await new Promise((res) => setTimeout(res, 300));
+    }
+    throw new Error('payment request never settled');
+  }
+
+  test('borrower applies online; the application joins the staff credit queue', async () => {
+    s.borrower = await as('borrower@demo.zm');
+    s.manager = await as('manager@demo.zm');
+    s.cashier = await as('cashier@demo.zm');
+    s.accountant = await as('accountant@demo.zm');
+    const products = await s.borrower.get('/borrower/products');
+    const salary = products.data.find((p) => p.code === 'SAL');
+    assert.ok(salary, 'salary product listed');
+
+    const input = { productId: salary.id, amount: '5000', term: 6, purpose: 'School fees for next term', monthlyIncome: '18000', monthlyExpenses: '6000', existingDebtRepayments: '0' };
+    const app = await s.borrower.post('/borrower/applications', input);
+    assert.equal(app.status, 201, JSON.stringify(app.error));
+    assert.ok(Number(app.data.installmentAmount) > 0);
+
+    const again = await s.borrower.post('/borrower/applications', input);
+    assert.equal(again.error?.code, 'APPLICATION_IN_REVIEW');
+
+    const staffView = await s.manager.get(`/applications?status=submitted&search=${app.data.applicationNumber}`);
+    assert.equal(staffView.data[0]?.channel, 'self_service');
+    const mine = await s.borrower.get('/borrower/applications');
+    assert.equal(mine.data[0].status, 'submitted');
+
+    // Staff endpoints stay closed to borrowers.
+    const forbidden = await s.borrower.get('/customers');
+    assert.equal(forbidden.status, 403);
+  });
+
+  test('borrower pays an instalment with a mobile-money prompt', async () => {
+    const loans = await s.borrower.get('/borrower/loans');
+    s.loan = loans.data.find((l) => l.status === 'active');
+    assert.ok(s.loan, 'borrower has an active loan');
+    const before = Number(s.loan.position.totalOutstanding);
+
+    const req = await s.borrower.post(`/borrower/loans/${s.loan.id}/pay`, { channel: 'mtn_momo', msisdn: '0971234567', amount: '150' });
+    assert.equal(req.status, 201, JSON.stringify(req.error));
+    assert.equal(req.data.status, 'pending');
+    const done = await settled(s.borrower, req.data.id);
+    assert.equal(done.status, 'succeeded');
+    assert.match(done.receiptNumber, /^RC/);
+
+    const after = await s.borrower.get(`/borrower/loans/${s.loan.id}`);
+    assert.equal(Number(after.data.position.totalOutstanding), before - 150);
+  });
+
+  test('a declined prompt posts nothing, and only one prompt runs at a time', async () => {
+    const req = await s.borrower.post(`/borrower/loans/${s.loan.id}/pay`, { channel: 'airtel_money', msisdn: '0970000000', amount: '200' });
+    assert.equal(req.status, 201, JSON.stringify(req.error));
+    const second = await s.borrower.post(`/borrower/loans/${s.loan.id}/pay`, { channel: 'airtel_money', msisdn: '0971234567', amount: '200' });
+    assert.equal(second.error?.code, 'PROMPT_PENDING');
+    const done = await settled(s.borrower, req.data.id);
+    assert.equal(done.status, 'failed');
+    assert.ok(done.failureReason);
+    assert.equal(done.receiptNumber, null);
+  });
+
+  test('paying off early waives future interest and closes the loan; the ledger balances', async () => {
+    const detail = await s.borrower.get(`/borrower/loans/${s.loan.id}`);
+    s.beforeSettlement = detail.data.position.totalOutstanding;
+    assert.ok(Number(detail.data.settlement.total) < Number(s.beforeSettlement), 'settlement is cheaper than the full balance');
+
+    const req = await s.borrower.post(`/borrower/loans/${s.loan.id}/pay`, { channel: 'mtn_momo', msisdn: '0971234567', settlement: true });
+    assert.equal(req.data.amount, detail.data.settlement.total);
+    const done = await settled(s.borrower, req.data.id);
+    assert.equal(done.status, 'succeeded', done.failureReason);
+    assert.equal(done.loanClosed, true);
+
+    const closed = await s.borrower.get(`/borrower/loans/${s.loan.id}`);
+    assert.equal(closed.data.status, 'closed');
+    assert.equal(closed.data.position.totalOutstanding, '0.00');
+    const tb = await s.accountant.get('/accounting/trial-balance');
+    assert.equal(tb.data.totals.balanced, true);
+    s.settlementReceipt = done.receiptNumber;
+  });
+
+  test('reversing an early settlement restores the waived interest', async () => {
+    const list = await s.cashier.get(`/payments?loanId=${s.loan.id}&status=posted`);
+    const payment = list.data.find((p) => p.receiptNumber === s.settlementReceipt);
+    const req = await s.cashier.post(`/payments/${payment.id}/reversals`, { reason: 'Wallet debit was later disputed' });
+    assert.equal(req.status, 201, JSON.stringify(req.error));
+    const ok = await s.accountant.post(`/reversals/${req.data.id}/decision`, { decision: 'approve' });
+    assert.equal(ok.status, 201, JSON.stringify(ok.error));
+
+    const reopened = await s.borrower.get(`/borrower/loans/${s.loan.id}`);
+    assert.equal(reopened.data.status, 'active');
+    assert.equal(reopened.data.position.totalOutstanding, s.beforeSettlement);
+    const tb = await s.accountant.get('/accounting/trial-balance');
+    assert.equal(tb.data.totals.balanced, true);
   });
 });

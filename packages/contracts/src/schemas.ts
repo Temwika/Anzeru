@@ -124,6 +124,24 @@ export const applicationCreateSchema = z.object({
 });
 export type ApplicationCreateInput = z.infer<typeof applicationCreateSchema>;
 
+/** A borrower applying from the portal: the customer is always the borrower's own record. */
+export const borrowerApplicationSchema = applicationCreateSchema.omit({ customerId: true });
+export type BorrowerApplicationInput = z.infer<typeof borrowerApplicationSchema>;
+
+/**
+ * Borrower-initiated mobile-money payment. A settlement pays off the loan today
+ * (the server sets the amount from its own quote); otherwise an amount is required.
+ */
+export const borrowerPaySchema = z
+  .object({
+    channel: z.enum(['mtn_momo', 'airtel_money']),
+    msisdn: z.string().trim().regex(PHONE_RE, 'Enter the wallet number, e.g. 0971234567'),
+    amount: money('Amount').optional(),
+    settlement: z.boolean().default(false),
+  })
+  .refine((v) => v.settlement || v.amount !== undefined, { path: ['amount'], message: 'Enter the amount to pay' });
+export type BorrowerPayInput = z.infer<typeof borrowerPaySchema>;
+
 export const decisionSchema = z.object({
   decision: z.enum(['approve', 'reject']),
   reason: z.string().trim().min(3, 'Record the reason for this decision').max(500),

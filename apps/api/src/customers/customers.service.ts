@@ -179,20 +179,24 @@ export class CustomersService {
   }
 
   async addDocument(user: AuthUser, customerId: string, docType: DocumentType, file?: Express.Multer.File) {
+    const c = await this.get(user, customerId);
+    return this.storeDocument(c.tenantId, customerId, user.id, docType, file);
+  }
+
+  /** Saves an upload for a customer the caller has already been authorised for (staff scope or the borrower themselves). */
+  async storeDocument(tenantId: string, customerId: string, uploadedBy: string, docType: DocumentType, file?: Express.Multer.File) {
     if (!file) throw new BusinessRuleError('FILE_REQUIRED', 'Attach a file');
     if (!ALLOWED_MIME.includes(file.mimetype)) throw new BusinessRuleError('FILE_TYPE', 'Upload a PDF, JPEG or PNG file');
-    const c = await this.get(user, customerId);
     // Stored privately under an opaque key; only served through the authorised download endpoint.
-    const key = join(c.tenantId, randomUUID());
-    const dir = join(storageRoot(), c.tenantId);
-    mkdirSync(dir, { recursive: true });
+    const key = join(tenantId, randomUUID());
+    mkdirSync(join(storageRoot(), tenantId), { recursive: true });
     writeFileSync(join(storageRoot(), key), file.buffer);
     const sha256 = createHash('sha256').update(file.buffer).digest('hex');
     return this.db.transaction(async (tx) => {
       const [doc] = await tx
         .insert(customerDocuments)
         .values({
-          tenantId: c.tenantId,
+          tenantId,
           customerId,
           docType,
           fileName: file.originalname.slice(0, 200),
@@ -200,12 +204,12 @@ export class CustomersService {
           sizeBytes: file.size,
           storageKey: key,
           sha256,
-          uploadedBy: user.id,
+          uploadedBy,
         })
         .returning({ id: customerDocuments.id, fileName: customerDocuments.fileName, docType: customerDocuments.docType });
       await this.audit.record(tx, {
-        tenantId: c.tenantId,
-        userId: user.id,
+        tenantId,
+        userId: uploadedBy,
         action: 'customer.document_uploaded',
         entityType: 'customer',
         entityId: customerId,
