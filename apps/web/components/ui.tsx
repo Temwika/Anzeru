@@ -328,7 +328,7 @@ export function Pager({ page, pageSize, total, onPage }: { page: number; pageSiz
 
 export function Tabs<T extends string>({ tabs, value, onChange }: { tabs: { value: T; label: string; count?: number }[]; value: T; onChange: (v: T) => void }) {
   return (
-    <div className="scroll-quiet inline-flex max-w-full gap-1 overflow-x-auto rounded-xl bg-slate-200/50 p-1" role="tablist">
+    <div className="no-scrollbar inline-flex max-w-full gap-1 overflow-x-auto rounded-xl bg-slate-200/50 p-1" role="tablist">
       {tabs.map((t) => {
         const on = value === t.value;
         return (

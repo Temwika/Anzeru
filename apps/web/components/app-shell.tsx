@@ -33,7 +33,7 @@ import { useEffect, useRef, useState } from "react";
 import { cn } from "@/lib/cn";
 import { api, useApi, useSession } from "@/lib/api";
 import { CommandPalette, type PaletteLink } from "./command-palette";
-import { Logo } from "./logo";
+import { Logo, LogoMark } from "./logo";
 import { Avatar, Kbd, Skeleton } from "./ui";
 
 interface Tasks {
@@ -212,11 +212,14 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       )}
 
       <div className="lg:pl-64">
-        <header className="sticky top-0 z-20 border-b border-slate-200/70 bg-white/85 backdrop-blur-md">
+        <header className="sticky top-0 z-20 border-b border-slate-200/70 bg-white/95 backdrop-blur-md">
           <div className="mx-auto flex h-16 max-w-7xl items-center gap-3 px-4 sm:px-6 lg:px-8">
             <button onClick={() => setDrawer(true)} className="-ml-1 rounded-lg p-2 text-slate-600 hover:bg-slate-100 lg:hidden" aria-label="Open menu">
               <Menu className="size-5" />
             </button>
+            <Link href="/dashboard" className="lg:hidden" aria-label="Home">
+              <LogoMark className="size-8" />
+            </Link>
             <Breadcrumbs pathname={pathname} />
             <div className="flex-1" />
             <button

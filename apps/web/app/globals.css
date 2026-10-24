@@ -110,6 +110,14 @@ body {
   scrollbar-color: rgb(148 163 184 / 0.35) transparent;
 }
 
+/* Swipeable strips (tabs) where the edge-clipped item already signals more. */
+.no-scrollbar {
+  scrollbar-width: none;
+}
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
 .bg-grid {
   background-image:
     linear-gradient(rgb(255 255 255 / 0.04) 1px, transparent 1px),

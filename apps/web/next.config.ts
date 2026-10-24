@@ -23,7 +23,8 @@ const nextConfig: NextConfig = {
       {
         source: "/:path*",
         headers: [
-          { key: "X-Frame-Options", value: "DENY" },
+          // Dev allows same-origin frames so screens can be previewed at phone width.
+          { key: "X-Frame-Options", value: process.env.NODE_ENV === "production" ? "DENY" : "SAMEORIGIN" },
           { key: "X-Content-Type-Options", value: "nosniff" },
           { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
           { key: "Permissions-Policy", value: "camera=(), microphone=(), geolocation=()" },

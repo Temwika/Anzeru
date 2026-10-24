@@ -1,16 +1,20 @@
+import { useId } from "react";
 import { cn } from "@/lib/cn";
 
 /** Anzelu mark: three rising bars (growth, instalments paid down) with a copper keystone. */
 export function LogoMark({ className }: { className?: string }) {
+  // Unique per instance: a page may render several marks, some inside display:none.
+  // useId may contain ":" or "«»", which break url(#…) references, so keep it to safe characters.
+  const gradient = `anz-g${useId().replace(/[^\w-]/g, "")}`;
   return (
     <svg viewBox="0 0 40 40" className={cn("size-9", className)} aria-hidden>
       <defs>
-        <linearGradient id="anz-g" x1="0" y1="0" x2="1" y2="1">
+        <linearGradient id={gradient} x1="0" y1="0" x2="1" y2="1">
           <stop offset="0" stopColor="#34d3a4" />
           <stop offset="1" stopColor="#04785f" />
         </linearGradient>
       </defs>
-      <rect width="40" height="40" rx="11" fill="url(#anz-g)" />
+      <rect width="40" height="40" rx="11" fill={`url(#${gradient})`} />
       <rect x="9" y="21" width="5.5" height="10" rx="2" fill="white" fillOpacity="0.7" />
       <rect x="17.25" y="15" width="5.5" height="16" rx="2" fill="white" fillOpacity="0.85" />
       <rect x="25.5" y="9" width="5.5" height="22" rx="2" fill="white" />
