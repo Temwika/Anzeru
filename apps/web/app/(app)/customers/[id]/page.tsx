@@ -111,7 +111,7 @@ export default function CustomerPage() {
   return (
     <>
       <PageHeader
-        back={{ href: "/customers", label: "Customers" }}
+        back={{ href: "/customers", label: "Borrowers" }}
         title={`${c.firstName} ${c.lastName}`}
         description={
           <span className="flex items-center gap-2">
@@ -131,7 +131,7 @@ export default function CustomerPage() {
           user?.permissions.includes("applications:write") &&
           c.kycStatus !== "rejected" && (
             <ButtonLink href={`/applications/new?customerId=${c.id}`}>
-              <Plus className="size-4" /> New application
+              <Plus className="size-4" /> New loan
             </ButtonLink>
           )
         }

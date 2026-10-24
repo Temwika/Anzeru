@@ -98,7 +98,7 @@ export default function NewCustomerPage() {
   return (
     <>
       <PageHeader
-        back={{ href: "/customers", label: "Customers" }}
+        back={{ href: "/customers", label: "Borrowers" }}
         eyebrow="Onboarding"
         title="Add a borrower"
         description="Three short steps: details and NRC photo, contact and income, then consent."

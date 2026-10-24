@@ -32,12 +32,12 @@ export default function CustomersPage() {
   return (
     <>
       <PageHeader
-        title="Customers"
-        description="Registered borrowers, their KYC status and active loans"
+        title="Borrowers"
+        description="Everyone registered to borrow, their KYC status and active loans"
         actions={
           user?.permissions.includes("customers:write") && (
             <ButtonLink href="/customers/new">
-              <Plus className="size-4" /> Register customer
+              <Plus className="size-4" /> Add borrower
             </ButtonLink>
           )
         }

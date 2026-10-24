@@ -69,7 +69,7 @@ export function CommandPalette({ open, onClose, user, pages }: { open: boolean; 
       setRecords([
         ...(customers?.items ?? []).map((c) => ({
           key: `c${c.id}`,
-          group: "Customers",
+          group: "Borrowers",
           label: `${c.firstName} ${c.lastName}`,
           sub: `${c.customerNumber} · ${c.phone}`,
           href: `/customers/${c.id}`,
