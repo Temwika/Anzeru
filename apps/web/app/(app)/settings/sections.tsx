@@ -94,7 +94,7 @@ export function Products() {
               <Td>
                 {kwacha(p.minAmount, { compact: true })} – {kwacha(p.maxAmount, { compact: true })}
                 <span className="block text-xs text-slate-500">
-                  {p.minTerm}–{p.maxTerm} instalments
+                  {p.minTerm === p.maxTerm ? `${p.minTerm} instalments, fixed` : `${p.minTerm}–${p.maxTerm} instalments`}
                 </span>
               </Td>
               <Td>
