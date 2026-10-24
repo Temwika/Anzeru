@@ -19,9 +19,10 @@ function useActive() {
   return (n: (typeof NAV)[number]) => (n.exact ? pathname === n.href || pathname.startsWith("/borrower/loans") : pathname.startsWith(n.href));
 }
 
+/** A full page load on sign-out drops every cached query along with the session. */
 async function logout() {
   await api.post("/auth/logout").catch(() => undefined);
-  window.location.href = "/login";
+  window.location.href = "/login"; // eslint-disable-line @next/next/no-location-assign-relative-destination
 }
 
 export function BorrowerHeader() {

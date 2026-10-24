@@ -15,10 +15,7 @@ export function useQuote(input: QuoteInput | null, delayMs = 200) {
   const key = input ? JSON.stringify(input) : null;
 
   useEffect(() => {
-    if (!key) {
-      setQuote(null);
-      return;
-    }
+    if (!key) return;
     const ctrl = new AbortController();
     const t = setTimeout(async () => {
       setLoading(true);
@@ -43,5 +40,5 @@ export function useQuote(input: QuoteInput | null, delayMs = 200) {
     };
   }, [key, delayMs]);
 
-  return { quote, error, loading };
+  return key ? { quote, error, loading } : { quote: null, error: null, loading: false };
 }

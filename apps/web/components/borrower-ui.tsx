@@ -198,15 +198,6 @@ export function PayDialog({
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    if (open) {
-      setMode(initialMode);
-      setRequestId(null);
-      setError(null);
-      setOther("");
-    }
-  }, [open, initialMode]);
-
   const { data: req } = useQuery({
     queryKey: ["payment-request", requestId],
     queryFn: () => api.get<PaymentRequest>(`/borrower/payment-requests/${requestId}`),
@@ -452,7 +443,7 @@ export function ProductCard({ product, selected, onSelect, dark }: { product: Bo
       onClick={onSelect}
       aria-pressed={selected}
       className={cn(
-        "block w-full rounded-2xl border bg-white p-5 text-left transition hover:-translate-y-0.5 hover:shadow-lift",
+        "flex w-full flex-col justify-start rounded-2xl border bg-white p-5 text-left transition hover:-translate-y-0.5 hover:shadow-lift",
         selected ? "border-brand-500 ring-4 ring-brand-500/15" : "border-slate-200 hover:border-brand-200",
       )}
     >

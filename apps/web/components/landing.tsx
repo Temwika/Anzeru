@@ -77,17 +77,23 @@ export function ProductCalculator() {
   const { data } = useCatalogue();
   const [code, setCode] = useState<string | null>(null);
   const product = data?.products.find((p) => p.code === code) ?? data?.products[0] ?? null;
-  const [amount, setAmount] = useState(0);
-  const [term, setTerm] = useState(0);
-
-  useEffect(() => {
-    if (!product) return;
-    const min = Number(product.minAmount);
-    const max = Number(product.maxAmount);
-    const step = max - min > 100_000 ? 1000 : 500;
-    setAmount(Math.round((min + (max - min) * 0.1) / step) * step || min);
-    setTerm(Math.round((product.minTerm + product.maxTerm) / 2));
-  }, [product?.code]); // eslint-disable-line react-hooks/exhaustive-deps
+  // Each product starts at a typical loan until the visitor moves a slider.
+  const [picked, setPicked] = useState<{ code: string; amount: number; term: number } | null>(null);
+  const current =
+    picked && picked.code === product?.code
+      ? picked
+      : product
+        ? {
+            amount: Math.max(
+              Number(product.minAmount),
+              Math.round((Number(product.minAmount) + (Number(product.maxAmount) - Number(product.minAmount)) * 0.1) / 500) * 500,
+            ),
+            term: Math.round((product.minTerm + product.maxTerm) / 2),
+          }
+        : { amount: 0, term: 0 };
+  const { amount, term } = current;
+  const setAmount = (v: number) => product && setPicked({ code: product.code, amount: v, term });
+  const setTerm = (v: number) => product && setPicked({ code: product.code, amount, term: v });
 
   const { quote } = useQuote(
     product && amount && term

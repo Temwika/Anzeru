@@ -2,7 +2,7 @@
 
 import { ArrowRight, BadgePercent, CalendarClock, ChevronRight, CircleAlert, FileUp, HandCoins, Sparkles } from "lucide-react";
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useState, useSyncExternalStore } from "react";
 import { ApplicationTracker, applicationHeadline, PayDialog, ProgressRing, type BorrowerApplication, type Position } from "@/components/borrower-ui";
 import { Button, ButtonLink, Card, ErrorState, Skeleton, StatusBadge } from "@/components/ui";
 import { useApi } from "@/lib/api";
@@ -31,6 +31,8 @@ interface Me {
   phone: string;
 }
 
+const noop = () => () => undefined;
+
 function greeting(now: Date) {
   const h = now.getHours();
   return h < 12 ? "Good morning" : h < 17 ? "Good afternoon" : "Good evening";
@@ -40,8 +42,12 @@ export default function BorrowerHome() {
   const { data: me } = useApi<Me>("/borrower/me");
   const { data: loans, error, isLoading } = useApi<LoanSummary[]>("/borrower/loans");
   const { data: applications } = useApi<BorrowerApplication[]>("/borrower/applications");
-  const [now, setNow] = useState<Date | null>(null);
-  useEffect(() => setNow(new Date()), []);
+  // The server has no idea of the borrower's clock, so the greeting renders on the client only.
+  const hello = useSyncExternalStore(
+    noop,
+    () => greeting(new Date()),
+    () => " ",
+  );
 
   const active = loans?.filter((l) => l.status === "active") ?? [];
   const others = loans?.filter((l) => l.status !== "active") ?? [];
@@ -51,7 +57,7 @@ export default function BorrowerHome() {
   return (
     <div className="space-y-6">
       <div>
-        <p className="text-sm text-slate-500">{now ? greeting(now) : " "}</p>
+        <p className="text-sm text-slate-500">{hello}</p>
         <h1 className="font-display text-[28px] font-bold leading-tight text-slate-900">{me ? me.firstName : "Welcome"}</h1>
       </div>
 
@@ -82,15 +88,13 @@ export default function BorrowerHome() {
 
       {inFlight.map((a) => (
         <Card key={a.id} className="p-5">
-          <div className="flex items-start justify-between gap-3">
-            <div>
-              <p className="text-xs font-medium uppercase tracking-wide text-slate-500">Application {a.applicationNumber}</p>
-              <p className="mt-1 font-display text-lg font-semibold text-slate-900">
-                {kwacha(a.amount)} · {a.productName}
-              </p>
-            </div>
+          <div className="flex items-center justify-between gap-3">
+            <p className="text-xs font-medium uppercase tracking-wide text-slate-500">{a.applicationNumber}</p>
             <StatusBadge status={a.status} />
           </div>
+          <p className="mt-1 font-display text-lg font-semibold text-slate-900">
+            {kwacha(a.amount)} · {a.productName}
+          </p>
           <div className="mt-5">
             <ApplicationTracker application={a} />
           </div>

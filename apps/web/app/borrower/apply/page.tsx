@@ -4,7 +4,7 @@ import type { Frequency } from "@anzelu/contracts";
 import { ArrowLeft, ArrowRight, CircleAlert, CircleCheck, Info, PartyPopper, ShieldCheck } from "lucide-react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { DocumentUploads } from "@/components/borrower-documents";
 import { ApplicationTracker, perPeriod, periods, ProductCard, type BorrowerProduct } from "@/components/borrower-ui";
 import { Button, ButtonLink, Card, ErrorState, Field, inputClass, Skeleton, Stepper, type Step } from "@/components/ui";
@@ -29,6 +29,14 @@ interface Guarantor {
   relationship: string;
 }
 
+/** A quarter of the way into the amount range and the middle term: a modest, typical loan. */
+function startingPoint(p: BorrowerProduct) {
+  const min = Number(p.minAmount);
+  const max = Number(p.maxAmount);
+  const s = amountStep(min, max);
+  return { amount: Math.max(min, Math.min(max, Math.round((min + (max - min) * 0.25) / s) * s)), term: Math.round((p.minTerm + p.maxTerm) / 2) };
+}
+
 /** Round to a step that suits the product's range, so the slider moves in sensible amounts. */
 function amountStep(min: number, max: number) {
   const span = max - min;
@@ -45,11 +53,17 @@ export default function ApplyPage() {
   const [step, setStep] = useState(params.get("product") ? 2 : 1);
   const [productId, setProductId] = useState<string | null>(params.get("product"));
   const product = products?.find((p) => p.id === productId) ?? null;
-  const [amount, setAmount] = useState(0);
-  const [term, setTerm] = useState(0);
+  // Amount and term start from a sensible point for the chosen product until the borrower moves a slider.
+  const [picked, setPicked] = useState<{ productId: string; amount: number; term: number } | null>(null);
+  const start = product ? startingPoint(product) : { amount: 0, term: 0 };
+  const current = picked && picked.productId === product?.id ? picked : start;
+  const amount = current.amount;
+  const term = current.term;
+  const setAmount = (v: number) => product && setPicked({ productId: product.id!, amount: v, term });
+  const setTerm = (v: number) => product && setPicked({ productId: product.id!, amount, term: v });
   const [purpose, setPurpose] = useState("");
   const [otherPurpose, setOtherPurpose] = useState("");
-  const [income, setIncome] = useState("");
+  const [incomeInput, setIncome] = useState<string | null>(null);
   const [expenses, setExpenses] = useState("");
   const [debts, setDebts] = useState("0");
   const [guarantor, setGuarantor] = useState<Guarantor>({ fullName: "", nrc: "", phone: "", relationship: "" });
@@ -59,19 +73,8 @@ export default function ApplyPage() {
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [done, setDone] = useState<{ applicationNumber: string; installmentAmount: string } | null>(null);
 
-  // A sensible starting point for each product: the middle of its amount range and term.
-  useEffect(() => {
-    if (!product) return;
-    const min = Number(product.minAmount);
-    const max = Number(product.maxAmount);
-    const s = amountStep(min, max);
-    setAmount(Math.max(min, Math.min(max, Math.round((min + (max - min) * 0.25) / s) * s)));
-    setTerm(Math.round((product.minTerm + product.maxTerm) / 2));
-  }, [product?.id]); // eslint-disable-line react-hooks/exhaustive-deps
-
-  useEffect(() => {
-    if (me?.monthlyIncome && !income) setIncome(String(Number(me.monthlyIncome)));
-  }, [me?.monthlyIncome]); // eslint-disable-line react-hooks/exhaustive-deps
+  // Pre-filled from the income we already hold, until the borrower edits it.
+  const income = incomeInput ?? (me?.monthlyIncome ? String(Number(me.monthlyIncome)) : "");
 
   const { quote, loading: quoting } = useQuote(
     product && amount && term
