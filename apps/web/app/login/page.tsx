@@ -76,7 +76,8 @@ export default function LoginPage() {
           <Logo subtitle="Loan management platform" />
         </div>
         <Suspense>
-          <LoginForm showDemo={process.env.NODE_ENV !== "production"} />
+          {/* Demo roles show in development, or on a hosted demo that opts in at build time. */}
+          <LoginForm showDemo={process.env.NODE_ENV !== "production" || process.env.SHOW_DEMO_LOGINS === "true"} />
         </Suspense>
       </div>
     </div>

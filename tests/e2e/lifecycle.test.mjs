@@ -58,7 +58,7 @@ async function as(email) {
 before(async () => {
   server = spawn(process.execPath, [join(root, 'apps/api/dist/main.js')], {
     cwd: join(root, 'apps/api'),
-    env: { ...process.env, PORT: String(PORT), DATABASE_URL: 'memory://', SEED_DEMO: 'true', DISABLE_SCHEDULER: 'true', MOMO_WEBHOOK_SECRET: WEBHOOK_SECRET, NODE_ENV: 'test' },
+    env: { ...process.env, PORT: String(PORT), DATABASE_URL: process.env.E2E_DATABASE_URL ?? 'memory://', SEED_DEMO: 'true', DISABLE_SCHEDULER: 'true', MOMO_WEBHOOK_SECRET: WEBHOOK_SECRET, NODE_ENV: 'test' },
     stdio: ['ignore', 'pipe', 'pipe'],
   });
   let logs = '';
