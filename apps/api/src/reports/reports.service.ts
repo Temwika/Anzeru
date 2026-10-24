@@ -179,7 +179,7 @@ export class ReportsService {
    * excluding their own submissions (maker-checker would block them anyway).
    */
   async tasks(user: AuthUser) {
-    const none = { applications: 0, disbursements: 0, reversals: 0, kyc: 0, total: 0 };
+    const none = { applications: 0, disbursements: 0, reversals: 0, kyc: 0, total: 0, newApplicants: 0, latestApplicant: null };
     if (!user.tenantId) return none;
     const can = (p: Permission) => user.permissions.includes(p);
     const count = sql<number>`count(*)::int`;
@@ -226,7 +226,35 @@ export class ReportsService {
         : zero,
     ]);
     const result = { applications: apps[0].count, disbursements: disb[0].count, reversals: revs[0].count, kyc: kyc[0].count };
-    return { ...result, total: result.applications + result.disbursements + result.reversals + result.kyc };
+    // Every applicant waiting for a decision in the user's branches, so new business is visible to the whole team.
+    const waiting = and(scope(user, loanApplications.tenantId, loanApplications.branchId), eq(loanApplications.status, "submitted"));
+    const [[{ newApplicants }], [latestApplicant]] = can("applications:read")
+      ? await Promise.all([
+          this.db.select({ newApplicants: count }).from(loanApplications).where(waiting),
+          this.db
+            .select({
+              id: loanApplications.id,
+              applicationNumber: loanApplications.applicationNumber,
+              name: sql<string>`${customers.firstName} || ' ' || ${customers.lastName}`,
+              amount: loanApplications.amount,
+              productName: loanProducts.name,
+              channel: loanApplications.channel,
+              submittedAt: loanApplications.submittedAt,
+            })
+            .from(loanApplications)
+            .innerJoin(customers, eq(loanApplications.customerId, customers.id))
+            .innerJoin(loanProducts, eq(loanApplications.productId, loanProducts.id))
+            .where(waiting)
+            .orderBy(desc(loanApplications.submittedAt))
+            .limit(1),
+        ])
+      : [[{ newApplicants: 0 }], []];
+    return {
+      ...result,
+      total: result.applications + result.disbursements + result.reversals + result.kyc,
+      newApplicants,
+      latestApplicant: latestApplicant ?? null,
+    };
   }
 
   private groupPerformance(book: PortfolioLoan[], key: (l: PortfolioLoan) => { id: string; name: string }) {

@@ -7,6 +7,7 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import type { z } from "zod";
+import { PhotoCapture } from "@/components/photo-capture";
 import { useToast } from "@/components/toast";
 import { Button, Card, Field, inputClass, Notice, PageHeader, Stepper, type Step } from "@/components/ui";
 import { api, useApi, useSession } from "@/lib/api";
@@ -15,7 +16,7 @@ import { kwacha, shortDate } from "@/lib/format";
 type Values = z.input<typeof customerCreateSchema>;
 
 const STEPS: { label: string; description: string; fields: (keyof Values)[] }[] = [
-  { label: "Identity", description: "Who they are", fields: ["firstName", "lastName", "nrc", "dateOfBirth", "gender", "branchId"] },
+  { label: "Identity", description: "Details & NRC photo", fields: ["firstName", "lastName", "nrc", "dateOfBirth", "gender", "branchId"] },
   {
     label: "Contact & income",
     description: "How to reach them",
@@ -32,6 +33,9 @@ export default function NewCustomerPage() {
   const { data: groups } = useApi<{ id: string; name: string; branchName: string; isActive: boolean }[]>("/loan-groups");
   const [step, setStep] = useState(0);
   const [error, setError] = useState<string | null>(null);
+  const [nrcFront, setNrcFront] = useState<File | null>(null);
+  const [nrcBack, setNrcBack] = useState<File | null>(null);
+  const [nrcMissing, setNrcMissing] = useState(false);
   const {
     register,
     handleSubmit,
@@ -45,7 +49,10 @@ export default function NewCustomerPage() {
   const f = (name: keyof Values) => ({ ...register(name), "aria-invalid": !!errors[name], className: inputClass });
 
   async function next() {
-    if (await trigger(STEPS[step].fields)) {
+    const ok = await trigger(STEPS[step].fields);
+    if (step === 0) setNrcMissing(!nrcFront);
+    if (step === 0 && !nrcFront) return;
+    if (ok) {
       setStep((s) => s + 1);
       window.scrollTo({ top: 0, behavior: "smooth" });
     }
@@ -55,7 +62,21 @@ export default function NewCustomerPage() {
     setError(null);
     try {
       const c = await api.post<{ id: string; warnings: string[] }>("/customers", values);
-      toast({ tone: "success", title: `${values.firstName} ${values.lastName} registered`, body: "Next, upload their NRC so a manager can verify KYC." });
+      const photos = [nrcFront, nrcBack].filter((p): p is File => !!p);
+      const saved = await Promise.allSettled(
+        photos.map((p) => {
+          const form = new FormData();
+          form.set("docType", "nrc");
+          form.set("file", p);
+          return api.post(`/customers/${c.id}/documents`, form);
+        }),
+      );
+      const failed = saved.some((r) => r.status === "rejected");
+      toast(
+        failed
+          ? { tone: "error", title: `${values.firstName} ${values.lastName} registered`, body: "The NRC photo didn’t upload. Add it from their profile." }
+          : { tone: "success", title: `${values.firstName} ${values.lastName} registered`, body: "NRC photo saved. A manager can now verify KYC." },
+      );
       router.push(`/customers/${c.id}${c.warnings.length ? `?warning=${encodeURIComponent(c.warnings[0])}` : ""}`);
     } catch (e) {
       const err = e as Error & { code?: string };
@@ -79,8 +100,8 @@ export default function NewCustomerPage() {
       <PageHeader
         back={{ href: "/customers", label: "Customers" }}
         eyebrow="Onboarding"
-        title="Register a customer"
-        description="Three short steps. Consent is captured before any credit check."
+        title="Add a borrower"
+        description="Three short steps: details and NRC photo, contact and income, then consent."
       />
 
       <div className="grid gap-6 lg:grid-cols-[1fr_300px]">
@@ -124,6 +145,26 @@ export default function NewCustomerPage() {
                       ))}
                     </select>
                   </Field>
+                  <div className="sm:col-span-2">
+                    <p className="flex items-center gap-2 text-sm font-semibold text-slate-900">
+                      <IdCard className="size-4 text-brand-600" /> NRC photo
+                    </p>
+                    <p className="mb-3 text-xs text-slate-500">Photograph the green NRC card so the number, name and photo are readable.</p>
+                    <div className="grid gap-4 sm:grid-cols-2">
+                      <PhotoCapture
+                        label="Front"
+                        required
+                        file={nrcFront}
+                        onChange={(file) => {
+                          setNrcFront(file);
+                          if (file) setNrcMissing(false);
+                        }}
+                        invalid={nrcMissing}
+                      />
+                      <PhotoCapture label="Back" hint="Optional" file={nrcBack} onChange={setNrcBack} />
+                    </div>
+                    {nrcMissing && <p className="mt-2 text-xs font-medium text-rose-600">Take a photo of the front of the NRC to continue.</p>}
+                  </div>
                 </div>
               )}
 

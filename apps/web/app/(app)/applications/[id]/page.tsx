@@ -5,6 +5,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { CircleCheck, CircleX, Info } from "lucide-react";
 import { useParams } from "next/navigation";
 import { useState } from "react";
+import { CaptureChecklistCard, type CaptureData, ClientCaptureCard, CollateralCard, GuarantorsCard, missingItems } from "@/components/application-capture";
 import { JourneyCard, NextStep } from "@/components/journey";
 import { useToast } from "@/components/toast";
 import {
@@ -26,7 +27,7 @@ import {
 import { api, useApi, useSession } from "@/lib/api";
 import { dateTime, kwacha, pct } from "@/lib/format";
 
-interface Application {
+interface Application extends Omit<CaptureData, "customer"> {
   id: string;
   applicationNumber: string;
   channel: "branch" | "self_service";
@@ -41,7 +42,7 @@ interface Application {
   submittedBy: string;
   officerName: string;
   canDecide: boolean;
-  customer: { id: string; firstName: string; lastName: string; customerNumber: string; kycStatus: string; employer: string | null };
+  customer: { id: string; firstName: string; lastName: string; nrc: string; customerNumber: string; kycStatus: string; employer: string | null };
   product: {
     name: string;
     interestMethod: keyof typeof LABELS.interestMethod;
@@ -49,7 +50,6 @@ interface Application {
     repaymentFrequency: keyof typeof LABELS.frequency;
     maxDtiPct: string;
   };
-  guarantors: { id: string; fullName: string; nrc: string; phone: string; relationship: string }[];
   decisions: { id: string; decision: string; reason: string; decidedAt: string; decidedBy: string }[];
   loan: { id: string; loanNumber: string; status: string } | null;
   assessment: {
@@ -101,6 +101,7 @@ export default function ApplicationPage() {
     }
   }
 
+  const missing = missingItems(a.checklist, a.guarantors.length);
   const blocked =
     user?.permissions.includes("applications:decide") && a.status === "submitted" && !a.canDecide
       ? a.submittedBy === user.id
@@ -111,7 +112,7 @@ export default function ApplicationPage() {
   return (
     <>
       <PageHeader
-        back={{ href: "/applications", label: "Applications" }}
+        back={{ href: "/applications", label: "New Applicants" }}
         eyebrow="Loan application"
         title={`${a.customer.firstName} ${a.customer.lastName} · ${kwacha(a.amount)}`}
         description={
@@ -128,21 +129,34 @@ export default function ApplicationPage() {
           <NextStep
             tone="you"
             title="Make the credit decision"
-            body={`Scorecard recommends ${s.recommendation} (grade ${s.grade}, ${s.score}/100). ${s.checks.filter((c) => !c.passed && c.hard).length ? "Some hard policy checks fail; approval will be blocked." : "All hard policy checks pass."}`}
+            body={
+              missing.length
+                ? `Still needed before approval: ${missing.join(", ")}. You can decline now, or wait for the officer to capture them.`
+                : `Scorecard recommends ${s.recommendation} (grade ${s.grade}, ${s.score}/100). ${s.checks.filter((c) => !c.passed && c.hard).length ? "Some hard policy checks fail; approval will be blocked." : "All hard policy checks pass, and every document is on file."}`
+            }
             action={
               <>
                 <Button variant="secondary" onClick={() => setDecision("reject")}>
                   Decline
                 </Button>
-                <Button onClick={() => setDecision("approve")}>Approve loan</Button>
+                <Button onClick={() => setDecision("approve")} disabled={missing.length > 0}>
+                  Approve loan
+                </Button>
               </>
             }
           />
         )}
         {a.status === "submitted" && !a.canDecide && (
           <NextStep
-            title={blocked ?? "Waiting for a credit approver"}
-            body={blocked ? undefined : "A credit manager reviews the scorecard and decides. You will see the outcome here."}
+            tone={missing.length && !blocked ? "you" : undefined}
+            title={blocked ?? (missing.length ? "Capture the missing documents" : "Waiting for a credit approver")}
+            body={
+              blocked
+                ? undefined
+                : missing.length
+                  ? `Still needed: ${missing.join(", ")}. Use the buttons below to add them.`
+                  : "A credit manager reviews the scorecard and decides. You will see the outcome here."
+            }
           />
         )}
         {a.loan && (
@@ -222,6 +236,17 @@ export default function ApplicationPage() {
       </div>
 
       <div className="mt-6 grid gap-6 lg:grid-cols-3">
+        <div className="space-y-6 lg:col-span-2">
+          <GuarantorsCard a={a} canEdit={!!user?.permissions.includes("applications:write")} />
+          <CollateralCard a={a} />
+        </div>
+        <div className="space-y-6">
+          <CaptureChecklistCard a={a} />
+          <ClientCaptureCard a={a} />
+        </div>
+      </div>
+
+      <div className="mt-6 grid gap-6 lg:grid-cols-3">
         <Card className="lg:col-span-2">
           <CardHeader title="Policy checks" description="Hard checks must pass before approval" />
           <ul className="divide-y divide-slate-100">
@@ -246,20 +271,6 @@ export default function ApplicationPage() {
           </ul>
         </Card>
         <div className="space-y-6">
-          <Card>
-            <CardHeader title="Guarantors" />
-            <ul className="divide-y divide-slate-100 text-sm">
-              {a.guarantors.map((g) => (
-                <li key={g.id} className="px-5 py-3">
-                  <p className="font-medium text-slate-800">{g.fullName}</p>
-                  <p className="text-xs text-slate-500">
-                    {g.relationship} · {g.nrc} · {g.phone}
-                  </p>
-                </li>
-              ))}
-              {a.guarantors.length === 0 && <li className="px-5 py-3 text-slate-500">None recorded</li>}
-            </ul>
-          </Card>
           <Card>
             <CardHeader title="Decision history" />
             <ul className="divide-y divide-slate-100 text-sm">

@@ -15,13 +15,14 @@ import {
   ShieldCheck,
   Siren,
   UserPlus,
+  UserRoundPlus,
   Wallet,
 } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { AgeingBar, GroupedBarChart } from "@/components/charts";
 import { Avatar, Card, CardHeader, ErrorState, ProgressBar, Skeleton, StatCard, StatusBadge, Table, Td, Th } from "@/components/ui";
-import { useApi, useSession } from "@/lib/api";
+import { usePage, useApi, useSession } from "@/lib/api";
 import { cn } from "@/lib/cn";
 import { kwacha, pct, shortDate } from "@/lib/format";
 
@@ -76,19 +77,54 @@ function greeting(now: Date) {
 function nextActions(user: SessionUser, tasks?: Tasks, d?: Dashboard): Action[] {
   const can = (p: string) => user.permissions.includes(p as never);
   const out: Action[] = [];
-  if (tasks?.applications) out.push({ href: "/approvals", icon: BookOpenCheck, title: `Decide ${plural(tasks.applications, "application")}`, body: "Scored and waiting for a credit decision", urgent: true });
-  if (tasks?.disbursements) out.push({ href: "/approvals", icon: HandCoins, title: `Authorise ${plural(tasks.disbursements, "payout")}`, body: "Approved loans ready to be paid out", urgent: true });
-  if (tasks?.reversals) out.push({ href: "/approvals", icon: ReceiptText, title: `Review ${plural(tasks.reversals, "reversal request")}`, body: "A colleague asked to undo a receipt", urgent: true });
-  if (tasks?.kyc) out.push({ href: "/customers?kyc=pending", icon: ShieldCheck, title: `Verify ${plural(tasks.kyc, "customer")}`, body: "KYC documents waiting for review", urgent: true });
+  if (tasks?.applications)
+    out.push({
+      href: "/applications?status=submitted",
+      icon: BookOpenCheck,
+      title: `Decide ${plural(tasks.applications, "application")}`,
+      body: "Scored and waiting for a credit decision",
+      urgent: true,
+    });
+  if (tasks?.disbursements)
+    out.push({
+      href: "/approvals",
+      icon: HandCoins,
+      title: `Authorise ${plural(tasks.disbursements, "payout")}`,
+      body: "Approved loans ready to be paid out",
+      urgent: true,
+    });
+  if (tasks?.reversals)
+    out.push({
+      href: "/approvals",
+      icon: ReceiptText,
+      title: `Review ${plural(tasks.reversals, "reversal request")}`,
+      body: "A colleague asked to undo a receipt",
+      urgent: true,
+    });
+  if (tasks?.kyc)
+    out.push({
+      href: "/customers?kyc=pending",
+      icon: ShieldCheck,
+      title: `Verify ${plural(tasks.kyc, "customer")}`,
+      body: "KYC documents waiting for review",
+      urgent: true,
+    });
   if (can("collections:write") && d?.kpis.loansInArrears)
-    out.push({ href: "/collections", icon: Siren, title: `Follow up ${plural(d.kpis.loansInArrears, "loan")} in arrears`, body: `${kwacha(d.kpis.overdueAmount, { compact: true })} overdue across the book` });
+    out.push({
+      href: "/loans/arrears",
+      icon: Siren,
+      title: `Follow up ${plural(d.kpis.loansInArrears, "loan")} in arrears`,
+      body: `${kwacha(d.kpis.overdueAmount, { compact: true })} overdue across the book`,
+    });
   if (can("applications:write")) {
     out.push({ href: "/customers/new", icon: UserPlus, title: "Onboard a customer", body: "Identity, contact, income and consent in three steps" });
     out.push({ href: "/applications/new", icon: BookOpenCheck, title: "Start a loan application", body: "Live repayment quote and affordability check" });
   }
   if (can("payments:record")) out.push({ href: "/loans", icon: Wallet, title: "Record a repayment", body: "Open the loan, then Record payment" });
-  if (can("accounting:read")) out.push({ href: "/accounting", icon: Landmark, title: "Review the trial balance", body: "Confirm the ledger balances before close" });
-  if (can("settings:manage")) out.push({ href: "/settings", icon: Settings2, title: "Manage products and users", body: "Pricing, branches, roles and approval limits" });
+  if (can("accounting:read"))
+    out.push({ href: "/accounting", icon: Landmark, title: "Review the trial balance", body: "Confirm the ledger balances before close" });
+  if (can("settings:manage"))
+    out.push({ href: "/settings", icon: Settings2, title: "Manage products and users", body: "Pricing, branches, roles and approval limits" });
   return out.slice(0, 4);
 }
 
@@ -127,7 +163,8 @@ export default function DashboardPage() {
                 <>Loading your workspace…</>
               ) : urgent > 0 ? (
                 <>
-                  You have <span className="font-semibold text-copper-400">{plural(tasks?.total ?? 0, "item")}</span> waiting for your sign-off. Everything else is moving.
+                  You have <span className="font-semibold text-copper-400">{plural(tasks?.total ?? 0, "item")}</span> waiting for your sign-off. Everything else
+                  is moving.
                 </>
               ) : (
                 <>Nothing is waiting on you right now. Here&apos;s where the book stands and what you can do next.</>
@@ -165,7 +202,12 @@ export default function DashboardPage() {
                           a.urgent ? "border-copper-400/30 bg-copper-500/10 hover:bg-copper-500/20" : "border-white/10 bg-white/[0.04] hover:bg-white/[0.08]",
                         )}
                       >
-                        <span className={cn("grid size-9 shrink-0 place-items-center rounded-xl", a.urgent ? "bg-copper-500 text-white" : "bg-white/10 text-brand-300")}>
+                        <span
+                          className={cn(
+                            "grid size-9 shrink-0 place-items-center rounded-xl",
+                            a.urgent ? "bg-copper-500 text-white" : "bg-white/10 text-brand-300",
+                          )}
+                        >
                           <a.icon className="size-4" />
                         </span>
                         <span className="min-w-0 flex-1">
@@ -182,6 +224,8 @@ export default function DashboardPage() {
           </div>
         </div>
       </section>
+
+      {user?.permissions.includes("applications:read") && <NewApplicants />}
 
       {error && <ErrorState error={error} onRetry={() => refetch()} />}
 
@@ -232,10 +276,15 @@ export default function DashboardPage() {
           label="Portfolio at risk · 30 days"
           value={data && pct(data.kpis.par30)}
           sub={data && `PAR 90 ${pct(data.kpis.par90)} · ${plural(data.kpis.loansInArrears, "loan")} in arrears`}
-          href="/collections"
+          href="/loans/arrears"
         >
           {data && (
-            <p className={cn("mt-3 inline-flex rounded-full px-2 py-0.5 text-[11px] font-medium", par30 > 10 ? "bg-rose-50 text-rose-700" : "bg-emerald-50 text-emerald-700")}>
+            <p
+              className={cn(
+                "mt-3 inline-flex rounded-full px-2 py-0.5 text-[11px] font-medium",
+                par30 > 10 ? "bg-rose-50 text-rose-700" : "bg-emerald-50 text-emerald-700",
+              )}
+            >
               {par30 > 10 ? "Above 10% risk appetite" : "Within 10% risk appetite"}
             </p>
           )}
@@ -247,7 +296,10 @@ export default function DashboardPage() {
           <CardHeader title="Disbursements and collections" description="Last six months, by value date" />
           <div className="p-5">
             {data ? (
-              <GroupedBarChart series={["Disbursed", "Collected"]} data={data.trend.map((t) => ({ label: monthLabel(t.month), values: [Number(t.disbursed), Number(t.collected)] }))} />
+              <GroupedBarChart
+                series={["Disbursed", "Collected"]}
+                data={data.trend.map((t) => ({ label: monthLabel(t.month), values: [Number(t.disbursed), Number(t.collected)] }))}
+              />
             ) : (
               <Skeleton className="h-64" />
             )}
@@ -259,8 +311,8 @@ export default function DashboardPage() {
             title="Portfolio quality"
             description="Outstanding principal by days past due"
             action={
-              <Link href="/collections" className="inline-flex items-center gap-1 text-xs font-semibold text-brand-700 hover:text-brand-800">
-                Collections <ArrowRight className="size-3.5" />
+              <Link href="/loans/arrears" className="inline-flex items-center gap-1 text-xs font-semibold text-brand-700 hover:text-brand-800">
+                Arrears <ArrowRight className="size-3.5" />
               </Link>
             }
           />
@@ -362,7 +414,12 @@ function Performance({
                     <ProgressBar value={(Number(r.outstandingPrincipal) / max) * 100} label={`${r.name} share of book`} />
                   </div>
                   <span className="tabular w-16 text-right text-xs text-slate-500">{plural(r.activeLoans, "loan")}</span>
-                  <span className={cn("tabular w-20 rounded-full px-2 py-0.5 text-center text-[11px] font-semibold", risky ? "bg-rose-50 text-rose-700" : "bg-emerald-50 text-emerald-700")}>
+                  <span
+                    className={cn(
+                      "tabular w-20 rounded-full px-2 py-0.5 text-center text-[11px] font-semibold",
+                      risky ? "bg-rose-50 text-rose-700" : "bg-emerald-50 text-emerald-700",
+                    )}
+                  >
                     PAR {pct(r.par30)}
                   </span>
                 </div>
@@ -376,5 +433,70 @@ function Performance({
         )}
       </ul>
     </Card>
+  );
+}
+
+interface Applicant {
+  id: string;
+  applicationNumber: string;
+  customerName: string;
+  amount: string;
+  productName: string;
+  channel: "branch" | "self_service";
+  submittedAt: string;
+  grade: string;
+}
+
+/** The newest applicants, front and centre: new business should never wait unseen. */
+function NewApplicants() {
+  const { data } = usePage<Applicant>("/applications?status=submitted&pageSize=4");
+  if (!data?.items.length) return null;
+  return (
+    <section className="mb-6 animate-slide-up rounded-3xl border border-brand-200 bg-gradient-to-br from-brand-50 via-white to-white p-5 shadow-card sm:p-6">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="flex items-center gap-3">
+          <span className="relative grid size-11 place-items-center rounded-2xl bg-brand-600 text-white shadow-lg shadow-brand-600/25">
+            <UserRoundPlus className="size-5" />
+            <span className="absolute -right-1 -top-1 flex size-3.5">
+              <span className="absolute inline-flex size-full animate-ping rounded-full bg-brand-400 opacity-70" />
+              <span className="relative inline-flex size-3.5 rounded-full border-2 border-white bg-brand-500" />
+            </span>
+          </span>
+          <div>
+            <h2 className="font-display text-lg font-bold text-slate-900">
+              {data.total} new applicant{data.total === 1 ? "" : "s"} waiting
+            </h2>
+            <p className="text-sm text-slate-600">Review the documents and decide, so clients hear back today.</p>
+          </div>
+        </div>
+        <Link
+          href="/applications?status=submitted"
+          className="inline-flex items-center gap-1.5 rounded-xl bg-brand-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-brand-700"
+        >
+          See all applicants <ArrowRight className="size-4" />
+        </Link>
+      </div>
+      <ul className="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+        {data.items.map((a) => (
+          <li key={a.id}>
+            <Link
+              href={`/applications/${a.id}`}
+              className="group flex h-full items-center gap-3 rounded-2xl border border-slate-200 bg-white p-3.5 transition hover:-translate-y-0.5 hover:border-brand-300 hover:shadow-lift"
+            >
+              <Avatar name={a.customerName} />
+              <span className="min-w-0 flex-1">
+                <span className="block truncate text-sm font-semibold text-slate-900">{a.customerName}</span>
+                <span className="tabular block text-sm font-bold text-brand-700">{kwacha(a.amount)}</span>
+                <span className="block truncate text-xs text-slate-500">
+                  {a.productName}
+                  {a.channel === "self_service" ? " · online" : ""}
+                </span>
+              </span>
+              <ArrowUpRight className="size-4 text-slate-300 transition group-hover:text-brand-600" />
+            </Link>
+          </li>
+        ))}
+      </ul>
+    </section>
   );
 }

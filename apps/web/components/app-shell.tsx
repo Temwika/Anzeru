@@ -17,7 +17,7 @@ import {
   IdCard,
   MessageSquareText,
   Package,
-  PhoneCall,
+  UserRoundPlus,
   UserRoundSearch,
   UsersRound,
   Wallet,
@@ -51,6 +51,7 @@ import { cn } from "@/lib/cn";
 import { api, useApi, useSession } from "@/lib/api";
 import { CommandPalette, type PaletteLink } from "./command-palette";
 import { Logo, LogoMark } from "./logo";
+import { useToast } from "./toast";
 import { Avatar, Kbd, Skeleton } from "./ui";
 
 interface Tasks {
@@ -59,6 +60,8 @@ interface Tasks {
   reversals: number;
   kyc: number;
   total: number;
+  newApplicants: number;
+  latestApplicant: { id: string; applicationNumber: string; name: string; amount: string; productName: string; channel: string; submittedAt: string } | null;
 }
 
 interface NavItem {
@@ -69,9 +72,10 @@ interface NavItem {
   /** Shown when the user holds any of these permissions (overrides `permission`). */
   anyOf?: Permission[];
   badge?: (t: Tasks) => number;
+  /** Stands out in the menu: a bright, pulsing count so new business is never missed. */
+  highlight?: boolean;
 }
 
-const APPROVER: Permission[] = ["applications:decide", "disbursements:authorise", "payments:reverse:approve"];
 
 /** Follows the menu staff already know from the previous system. */
 const NAV: { section: string; items: NavItem[] }[] = [
@@ -79,7 +83,14 @@ const NAV: { section: string; items: NavItem[] }[] = [
     section: "Overview",
     items: [
       { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard, permission: "loans:read" },
-      { href: "/approvals", label: "Approvals", icon: CheckCheck, anyOf: APPROVER, badge: (t) => t.applications + t.disbursements + t.reversals },
+      { href: "/applications", label: "New Applicants", icon: UserRoundPlus, permission: "applications:read", badge: (t) => t.newApplicants, highlight: true },
+      {
+        href: "/approvals",
+        label: "Payouts & Reversals",
+        icon: CheckCheck,
+        anyOf: ["disbursements:authorise", "payments:reverse:approve"],
+        badge: (t) => t.disbursements + t.reversals,
+      },
     ],
   },
   {
@@ -92,9 +103,7 @@ const NAV: { section: string; items: NavItem[] }[] = [
       { href: "/loans/past-maturity", label: "Past Maturity", icon: CalendarX2, permission: "loans:read" },
       { href: "/loans/maturing-soon", label: "Maturing Soon", icon: Hourglass, permission: "loans:read" },
       { href: "/groups", label: "Loan Groups", icon: UsersRound, permission: "customers:read" },
-      { href: "/applications", label: "Applications", icon: BookOpenCheck, permission: "applications:read" },
       { href: "/repayments", label: "Repayments", icon: ReceiptText, permission: "payments:read" },
-      { href: "/collections", label: "Collections", icon: PhoneCall, permission: "collections:read" },
     ],
   },
   {
@@ -157,6 +166,8 @@ const PAGES: PaletteLink[] = ALL_ITEMS.map((i) => ({ href: i.href, label: i.labe
 
 const SEGMENT_LABELS: Record<string, string> = {
   dashboard: "Dashboard",
+  applications: "New Applicants",
+  approvals: "Payouts & Reversals",
   customers: "Borrowers",
   groups: "Loan Groups",
   "due-today": "Due Today",
@@ -187,7 +198,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const queryClient = useQueryClient();
   const [drawer, setDrawer] = useState(false);
   const [palette, setPalette] = useState(false);
-  const { data: tasks } = useApi<Tasks>(user && user.role !== "platform_admin" ? "/reports/tasks" : null, { refetchInterval: 60_000 });
+  const { data: tasks } = useApi<Tasks>(user && user.role !== "platform_admin" ? "/reports/tasks" : null, { refetchInterval: 30_000 });
+  useNewApplicantAlert(tasks);
 
   useEffect(() => setDrawer(false), [pathname]);
   useEffect(() => {
@@ -243,7 +255,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     <>
       <div className="flex h-16 items-center px-5">
         <Link href={user?.role === "platform_admin" ? "/admin/tenants" : "/dashboard"}>
-          <Logo dark subtitle={user ? (user.tenantName ?? "Platform console") : " "} />
+          <Logo dark subtitle={user ? (user.role === "platform_admin" ? "Platform console" : ROLE_LABELS[user.role]) : " "} />
         </Link>
       </div>
       {nav}
@@ -301,6 +313,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                 <Kbd>Ctrl K</Kbd>
               </span>
             </button>
+            {!!tasks?.newApplicants && user?.permissions.includes("applications:read") && <NewApplicantsPill count={tasks.newApplicants} />}
             {user && <QuickCreate user={user} />}
             {user && user.role !== "platform_admin" && <Inbox tasks={tasks} user={user} />}
             {user ? <UserMenu user={user} onLogout={logout} /> : <Skeleton className="size-9 rounded-full" />}
@@ -311,6 +324,41 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
       {user && <CommandPalette open={palette} onClose={() => setPalette(false)} user={user} pages={PAGES} />}
     </div>
+  );
+}
+
+/** Pops a toast when a new application arrives while staff are working, so it is seen within seconds, not at the next refresh of a list. */
+function useNewApplicantAlert(tasks?: Tasks) {
+  const toast = useToast();
+  const router = useRouter();
+  const seen = useRef<string | null | undefined>(undefined);
+  useEffect(() => {
+    if (!tasks) return;
+    const latest = tasks.latestApplicant;
+    if (seen.current !== undefined && latest && latest.id !== seen.current) {
+      toast({
+        tone: "info",
+        title: `New applicant: ${latest.name}`,
+        body: `${latest.productName} · K${Number(latest.amount).toLocaleString()}${latest.channel === "self_service" ? " · applied online" : ""}`,
+      });
+      router.prefetch(`/applications/${latest.id}`);
+    }
+    seen.current = latest?.id ?? null;
+  }, [tasks, toast, router]);
+}
+
+function NewApplicantsPill({ count }: { count: number }) {
+  return (
+    <Link
+      href="/applications?status=submitted"
+      className="hidden h-10 items-center gap-2 rounded-xl bg-brand-50 px-3 text-sm font-semibold text-brand-800 ring-1 ring-inset ring-brand-200 transition hover:bg-brand-100 sm:inline-flex"
+    >
+      <span className="relative flex size-2.5">
+        <span className="absolute inline-flex size-full animate-ping rounded-full bg-brand-500 opacity-60" />
+        <span className="relative inline-flex size-2.5 rounded-full bg-brand-600" />
+      </span>
+      <span className="tabular">{count}</span> new applicant{count === 1 ? "" : "s"}
+    </Link>
   );
 }
 
@@ -328,7 +376,17 @@ function NavLink({ item, active, count = 0, compact }: { item: NavItem; active: 
       {active && <span className="absolute inset-y-1.5 -left-3 w-1 rounded-r-full bg-brand-500" />}
       <item.icon className={cn("size-[17px] shrink-0", active ? "text-brand-400" : "text-slate-500 group-hover:text-slate-300")} />
       <span className="flex-1 truncate">{item.label}</span>
-      {count > 0 && <span className="tabular rounded-full bg-brand-500 px-1.5 py-px text-[11px] font-semibold text-white">{count}</span>}
+      {count > 0 &&
+        (item.highlight ? (
+          <span className="relative flex">
+            <span className="absolute inset-0 animate-ping rounded-full bg-brand-400 opacity-40" />
+            <span className="tabular relative rounded-full bg-brand-500 px-2 py-px text-[11px] font-bold text-white shadow-[0_0_12px_rgb(242_107_29/0.6)]">
+              {count} new
+            </span>
+          </span>
+        ) : (
+          <span className="tabular rounded-full bg-brand-500 px-1.5 py-px text-[11px] font-semibold text-white">{count}</span>
+        ))}
     </Link>
   );
 }
@@ -456,14 +514,14 @@ function QuickCreate({ user }: { user: SessionUser }) {
       {(close) => (
         <div className="py-2">
           {canCustomer && (
-            <MenuLink href="/customers/new" icon={UserPlus} title="New customer" body="Register identity, contact and income, with consent" onClick={close} />
+            <MenuLink href="/customers/new" icon={UserPlus} title="New borrower" body="Details, NRC photo, contact and income, with consent" onClick={close} />
           )}
           {canApp && (
             <MenuLink
               href="/applications/new"
               icon={BookOpenCheck}
-              title="New loan application"
-              body="Pick a customer and product; we check affordability"
+              title="New loan"
+              body="Client, guarantor, collateral and signatures in one flow"
               onClick={close}
             />
           )}
@@ -477,9 +535,9 @@ function Inbox({ tasks, user }: { tasks?: Tasks; user: SessionUser }) {
   const rows = [
     {
       key: "applications",
-      href: "/approvals",
+      href: "/applications?status=submitted",
       icon: BookOpenCheck,
-      title: "Credit applications",
+      title: "New applicants",
       body: "Waiting for your decision",
       count: tasks?.applications ?? 0,
     },

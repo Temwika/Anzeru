@@ -237,6 +237,7 @@ export const loanProducts = pgTable(
     graceDays: integer("grace_days").notNull().default(0),
     maxDtiPct: ratePct("max_dti_pct").notNull().default("40"),
     requiresGuarantor: boolean("requires_guarantor").notNull().default(false),
+    requiresCollateral: boolean("requires_collateral").notNull().default(false),
     isActive: boolean("is_active").notNull().default(true),
     createdAt: createdAt(),
   },
@@ -271,6 +272,9 @@ export const loanApplications = pgTable(
     submittedBy: uuid("submitted_by").notNull(),
     submittedAt: timestamp("submitted_at", { withTimezone: true }).notNull().defaultNow(),
     decidedAt: timestamp("decided_at", { withTimezone: true }),
+    /** The borrower's signature on the loan application, as a PNG data URL captured on screen. */
+    borrowerSignature: text("borrower_signature"),
+    borrowerSignedAt: timestamp("borrower_signed_at", { withTimezone: true }),
   },
   (t) => [uniqueIndex("applications_tenant_number_uq").on(t.tenantId, t.applicationNumber), index("applications_status_idx").on(t.tenantId, t.status)],
 );
@@ -285,6 +289,44 @@ export const guarantors = pgTable("guarantors", {
   nrc: varchar("nrc", { length: 11 }).notNull(),
   phone: varchar("phone", { length: 16 }).notNull(),
   relationship: text("relationship").notNull(),
+  address: text("address"),
+  /** The guarantor's signature, as a PNG data URL captured on screen. */
+  signature: text("signature"),
+  signedAt: timestamp("signed_at", { withTimezone: true }),
+});
+
+/** Security pledged against a loan application: goods, a vehicle, title deeds, livestock and so on. */
+export const collateral = pgTable("collateral", {
+  id: pk(),
+  tenantId: tenantRef(),
+  applicationId: uuid("application_id")
+    .notNull()
+    .references(() => loanApplications.id),
+  type: text("type").notNull(),
+  description: text("description").notNull(),
+  identifier: text("identifier"),
+  estimatedValue: money("estimated_value").notNull(),
+  location: text("location"),
+  createdAt: createdAt(),
+});
+
+/** Files captured for an application: guarantor NRC photos and collateral photos. Stored privately like customer documents. */
+export const applicationDocuments = pgTable("application_documents", {
+  id: pk(),
+  tenantId: tenantRef(),
+  applicationId: uuid("application_id")
+    .notNull()
+    .references(() => loanApplications.id),
+  guarantorId: uuid("guarantor_id").references(() => guarantors.id),
+  collateralId: uuid("collateral_id").references(() => collateral.id),
+  docType: text("doc_type").notNull(),
+  fileName: text("file_name").notNull(),
+  mimeType: text("mime_type").notNull(),
+  sizeBytes: integer("size_bytes").notNull(),
+  storageKey: text("storage_key").notNull(),
+  sha256: text("sha256").notNull(),
+  uploadedBy: uuid("uploaded_by").notNull(),
+  createdAt: createdAt(),
 });
 
 export const creditDecisions = pgTable("credit_decisions", {

@@ -12,6 +12,7 @@ import { DB, DB_TOKEN } from "../db/database";
 import { branches, customers, loanGroups, loanProducts, loanScheduleItems, tenants, userBranchAccess, users } from "../db/schema";
 import { LoansService } from "../loans/loans.service";
 import { PaymentsService } from "../payments/payments.service";
+import { demoNrcCard, demoSignature } from "./images";
 
 /** Demo password for every seeded account (development data only). */
 export const DEMO_PASSWORD = "Demo2026!pass";
@@ -210,14 +211,14 @@ export async function seedDemo(app: INestApplicationContext) {
         tenantId,
         name: "Salary Advance",
         code: "SAL",
-        description: "Payroll-backed loans for formally employed customers",
-        interestMethod: "flat",
-        annualRatePct: "30",
+        description: "Payroll-backed advances for formally employed customers: 22% for the whole loan",
+        interestMethod: "flat_term",
+        annualRatePct: "22",
         repaymentFrequency: "monthly",
         minAmount: "1000",
         maxAmount: "50000",
         minTerm: 1,
-        maxTerm: 12,
+        maxTerm: 6,
         processingFeePct: "3",
         penaltyPct: "5",
         graceDays: 3,
@@ -240,6 +241,7 @@ export async function seedDemo(app: INestApplicationContext) {
         graceDays: 5,
         maxDtiPct: "45",
         requiresGuarantor: true,
+        requiresCollateral: true,
       },
       // The 28-day marketeers loan: 5% of the loan paid each day, K500 borrowed → K700 repaid.
       {
@@ -280,9 +282,6 @@ export async function seedDemo(app: INestApplicationContext) {
     .returning();
   const product = Object.fromEntries(productRows.map((p) => [p.code, p]));
 
-  const pdf = Buffer.from("%PDF-1.4\n1 0 obj<<>>endobj\ntrailer<<>>\n%%EOF\n");
-  const fakeFile = (name: string) => ({ originalname: name, mimetype: "application/pdf", size: pdf.length, buffer: pdf }) as Express.Multer.File;
-
   let loanCount = 0;
   const N = 36;
   const traders: { customerId: string; branchId: string }[] = [];
@@ -310,14 +309,14 @@ export async function seedDemo(app: INestApplicationContext) {
       nextOfKinPhone: `097${String(1000000 + Math.floor(rand() * 8999999))}`,
       consent: true,
     });
-    await customersSvc.addDocument(maker, c.id, "nrc", fakeFile(`nrc-${c.customerNumber}.pdf`));
+    await customersSvc.addDocument(maker, c.id, "nrc", demoNrcCard(`nrc-${c.customerNumber}.png`, i));
     if (i >= N - 2) continue; // two brand-new customers awaiting KYC
     await customersSvc.decideKyc(manager, c.id, "verified", "NRC sighted and verified against original");
 
     const code = employer ? (rand() < 0.75 ? "SAL" : "SME") : pick(["MKT", "MKT", "MKT", "MKT", "SME", "AGR"]);
     const p = product[code];
     if (code === "MKT") traders.push({ customerId: c.id, branchId: branch.id });
-    const term = code === "MKT" ? 28 : code === "AGR" ? pick([4, 6]) : code === "SAL" ? pick([6, 9, 12]) : pick([6, 12, 18]);
+    const term = code === "MKT" ? 28 : code === "AGR" ? pick([4, 6]) : code === "SAL" ? pick([3, 6, 6]) : pick([6, 12, 18]);
     // Marketeers borrow in K500 steps, sized so the daily payment stays affordable.
     const amount =
       code === "MKT"
@@ -338,20 +337,53 @@ export async function seedDemo(app: INestApplicationContext) {
         monthlyIncome: String(income),
         monthlyExpenses: String(Math.round(income * (0.25 + rand() * 0.2))),
         existingDebtRepayments: String(rand() < 0.3 ? Math.round(income * 0.08) : 0),
-        guarantors: p.requiresGuarantor
-          ? [
-              {
-                fullName: `${pick(FIRST)} ${pick(LAST)}`,
-                nrc: `${String(200000 + i * 1371)}/11/1`,
-                phone: `0966${String(100000 + i * 911).padStart(6, "0")}`,
-                relationship: "Business partner",
-              },
-            ]
-          : [],
+        borrowerSignature: demoSignature(i),
+        guarantors:
+          p.requiresGuarantor || code === "MKT"
+            ? [
+                {
+                  fullName: `${pick(FIRST)} ${pick(LAST)}`,
+                  nrc: `${String(200000 + i * 1371)}/11/1`,
+                  phone: `0966${String(100000 + i * 911).padStart(6, "0")}`,
+                  relationship: code === "MKT" ? "Fellow marketeer" : "Business partner",
+                  address: `Plot ${300 + i}, ${pick(["Sinda Boma", "Katete Central", "Petauke Central"])}`,
+                  signature: demoSignature(i + 100),
+                },
+              ]
+            : [],
+        collateral:
+          code === "SME" || code === "AGR"
+            ? [
+                {
+                  type: "business_stock",
+                  description: "Shop stock: groceries and household goods",
+                  estimatedValue: String(Number(amount) * 1.5),
+                  location: "Business premises",
+                },
+              ]
+            : code === "MKT"
+              ? [
+                  {
+                    type: "household_goods",
+                    description: pick(["32-inch flat-screen TV", "Fridge (Hisense, 200 L)", "Sofa set and coffee table"]),
+                    estimatedValue: String(Number(amount) * 1.2),
+                  },
+                ]
+              : [],
       },
       undefined,
       new Date(`${addDays(valueDate, -2)}T09:00:00Z`),
     );
+    // Guarantor NRC photos are taken at the branch; one fresh application is still waiting for its photo.
+    if (!(pipeline === "submitted" && i === N - 8)) {
+      for (const g of app.guarantors)
+        await applicationsSvc.addDocument(
+          maker,
+          app.id,
+          { docType: "guarantor_nrc_front", guarantorId: g.id },
+          demoNrcCard(`guarantor-nrc-${g.nrc.replaceAll("/", "-")}.png`, i + 50),
+        );
+    }
     if (pipeline === "submitted") continue;
     if (pipeline === "rejected") {
       await applicationsSvc.decide(manager, app.id, "reject", "Debt service ratio too high after including informal borrowings disclosed at interview");

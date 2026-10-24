@@ -1,6 +1,15 @@
 import { z } from "zod";
 import { ROLES } from "./access";
-import { CHANNELS, COLLECTION_ACTIVITY_TYPES, DOCUMENT_TYPES, FREQUENCIES, INTEREST_METHODS, KYC_STATUSES } from "./enums";
+import {
+  APPLICATION_DOCUMENT_TYPES,
+  CHANNELS,
+  COLLATERAL_TYPES,
+  COLLECTION_ACTIVITY_TYPES,
+  DOCUMENT_TYPES,
+  FREQUENCIES,
+  INTEREST_METHODS,
+  KYC_STATUSES,
+} from "./enums";
 
 /**
  * Validation schemas shared by the API (request validation) and the web app
@@ -90,6 +99,7 @@ export const loanProductSchema = z
     graceDays: int("Grace days", 0, 60),
     maxDtiPct: rate("Maximum debt-to-income"),
     requiresGuarantor: z.boolean().default(false),
+    requiresCollateral: z.boolean().default(false),
     isActive: z.boolean().default(true),
   })
   .refine((p) => Number(p.maxAmount) >= Number(p.minAmount), {
@@ -99,12 +109,38 @@ export const loanProductSchema = z
   .refine((p) => p.maxTerm >= p.minTerm, { path: ["maxTerm"], message: "Maximum term must be at least the minimum term" });
 export type LoanProductInput = z.infer<typeof loanProductSchema>;
 
+/** A signature drawn on screen, sent as a PNG data URL (kept small: a few tens of KB). */
+export const signatureSchema = z
+  .string()
+  .regex(/^data:image\/png;base64,[A-Za-z0-9+/=]+$/, "Capture the signature")
+  .max(400_000, "The signature image is too large");
+
 export const guarantorSchema = z.object({
-  fullName: z.string().trim().min(3).max(120),
+  fullName: z.string().trim().min(3, "Enter the guarantor's full name").max(120),
   nrc: z.string().trim().regex(NRC_RE, "NRC must look like 123456/78/1"),
   phone: z.string().trim().regex(PHONE_RE, "Phone must look like 0971234567"),
-  relationship: z.string().trim().min(2).max(60),
+  relationship: z.string().trim().min(2, "How do they know the borrower?").max(60),
+  address: optionalText,
+  signature: signatureSchema.optional(),
 });
+export type GuarantorInput = z.infer<typeof guarantorSchema>;
+
+export const collateralSchema = z.object({
+  type: z.enum(COLLATERAL_TYPES, { error: "Choose the type of collateral" }),
+  description: z.string().trim().min(3, "Describe the item, e.g. 32-inch Hisense TV").max(300),
+  identifier: optionalText,
+  estimatedValue: money("Estimated value"),
+  location: optionalText,
+});
+export type CollateralInput = z.infer<typeof collateralSchema>;
+
+export const applicationDocumentSchema = z.object({
+  docType: z.enum(APPLICATION_DOCUMENT_TYPES),
+  guarantorId: uuid.optional(),
+  collateralId: uuid.optional(),
+});
+
+export const guarantorSignatureSchema = z.object({ signature: signatureSchema });
 
 export const applicationCreateSchema = z.object({
   customerId: uuid,
@@ -116,6 +152,8 @@ export const applicationCreateSchema = z.object({
   monthlyExpenses: money("Monthly expenses"),
   existingDebtRepayments: money("Existing debt repayments"),
   guarantors: z.array(guarantorSchema).max(3).default([]),
+  collateral: z.array(collateralSchema).max(5).default([]),
+  borrowerSignature: signatureSchema.optional(),
 });
 export type ApplicationCreateInput = z.infer<typeof applicationCreateSchema>;
 

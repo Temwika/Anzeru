@@ -22,6 +22,13 @@ export type CollectionActivityType = (typeof COLLECTION_ACTIVITY_TYPES)[number];
 export const DOCUMENT_TYPES = ["nrc", "payslip", "bank_statement", "proof_of_address", "business_licence", "other"] as const;
 export type DocumentType = (typeof DOCUMENT_TYPES)[number];
 
+export const COLLATERAL_TYPES = ["household_goods", "business_stock", "electronics", "vehicle", "motorcycle", "livestock", "land_title", "other"] as const;
+export type CollateralType = (typeof COLLATERAL_TYPES)[number];
+
+/** Files captured on an application rather than on the customer. */
+export const APPLICATION_DOCUMENT_TYPES = ["guarantor_nrc_front", "guarantor_nrc_back", "collateral_photo"] as const;
+export type ApplicationDocumentType = (typeof APPLICATION_DOCUMENT_TYPES)[number];
+
 export const AGEING_BUCKETS = ["current", "1-30", "31-60", "61-90", "90+"] as const;
 export type AgeingBucket = (typeof AGEING_BUCKETS)[number];
 
@@ -44,6 +51,16 @@ export const LABELS = {
     mtn_momo: "MTN Mobile Money",
     airtel_money: "Airtel Money",
   } satisfies Record<Channel, string>,
+  collateralType: {
+    household_goods: "Household goods",
+    business_stock: "Business stock",
+    electronics: "Electronics",
+    vehicle: "Motor vehicle",
+    motorcycle: "Motorcycle",
+    livestock: "Livestock",
+    land_title: "Land / title deed",
+    other: "Other",
+  } satisfies Record<CollateralType, string>,
   documentType: {
     nrc: "NRC copy",
     payslip: "Payslip",

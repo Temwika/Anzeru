@@ -23,24 +23,9 @@ interface Row {
   bucket: string;
 }
 
-interface Group {
-  id: string;
-  name: string;
-  activeLoans: number;
-  outstandingPrincipal: string;
-  par30: string;
-}
-
-interface Dashboard {
-  kpis: { outstandingPrincipal: string; par30: string; par90: string; collectionEfficiencyPct: string | null; activeLoans: number };
-  branches: Group[];
-  officers: Group[];
-}
-
 export default function ReportsPage() {
   const { data: book, error, isLoading } = useApi<Row[]>("/reports/portfolio");
-  const { data: dash } = useApi<Dashboard>("/reports/dashboard");
-  const [view, setView] = useState<"product" | "branches" | "officers" | "book">("product");
+  const [view, setView] = useState<"product" | "book">("product");
 
   const byProduct = useMemo(() => {
     const map = new Map<string, { name: string; count: number; principal: number; outstanding: number; atRisk: number }>();
@@ -59,29 +44,22 @@ export default function ReportsPage() {
     <>
       <PageHeader
         title="Reports"
-        description="Portfolio quality as of today, computed from the live repayment schedules"
+        description="The loan book by product, and every active loan with its balance. Quality, branches and collections have their own reports in the menu."
         actions={
-          <a href="/api/v1/reports/portfolio.csv" className="inline-flex h-10 items-center gap-2 rounded-lg border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 shadow-sm hover:bg-slate-50">
+          <a
+            href="/api/v1/reports/portfolio.csv"
+            className="inline-flex h-10 items-center gap-2 rounded-lg border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 shadow-sm hover:bg-slate-50"
+          >
             <Download className="size-4" /> Portfolio CSV
           </a>
         }
       />
-      {dash && (
-        <div className="mb-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-          <Kpi label="Gross loan portfolio" value={kwacha(dash.kpis.outstandingPrincipal)} sub={`${dash.kpis.activeLoans} active loans`} />
-          <Kpi label="PAR 30" value={pct(dash.kpis.par30)} sub="Principal more than 30 days late" />
-          <Kpi label="PAR 90" value={pct(dash.kpis.par90)} sub="Principal more than 90 days late" />
-          <Kpi label="Collection efficiency" value={dash.kpis.collectionEfficiencyPct ? `${dash.kpis.collectionEfficiencyPct}%` : "—"} sub="Collected ÷ due this month" />
-        </div>
-      )}
       <div className="mb-4">
         <Tabs
           value={view}
           onChange={setView}
           tabs={[
             { value: "product", label: "By product" },
-            { value: "branches", label: "By branch" },
-            { value: "officers", label: "By officer" },
             { value: "book", label: "Loan book" },
           ]}
         />
@@ -110,32 +88,6 @@ export default function ReportsPage() {
                   <Td className="text-right">{kwacha(g.principal)}</Td>
                   <Td className="text-right">{kwacha(g.outstanding)}</Td>
                   <Td className="text-right">{pct(g.outstanding ? (g.atRisk / g.outstanding) * 100 : 0)}</Td>
-                </tr>
-              ))}
-            </tbody>
-          </Table>
-        </Card>
-      )}
-
-      {(view === "branches" || view === "officers") && dash && (
-        <Card>
-          <CardHeader title={view === "branches" ? "Branch performance" : "Loan officer performance"} />
-          <Table>
-            <thead>
-              <tr className="border-b border-slate-100">
-                <Th>{view === "branches" ? "Branch" : "Officer"}</Th>
-                <Th className="text-right">Active loans</Th>
-                <Th className="text-right">Outstanding principal</Th>
-                <Th className="text-right">PAR 30</Th>
-              </tr>
-            </thead>
-            <tbody className="tabular divide-y divide-slate-100">
-              {dash[view].map((g) => (
-                <tr key={g.id}>
-                  <Td className="font-medium text-slate-900">{g.name}</Td>
-                  <Td className="text-right">{g.activeLoans}</Td>
-                  <Td className="text-right">{kwacha(g.outstandingPrincipal)}</Td>
-                  <Td className={`text-right ${Number(g.par30) > 10 ? "font-semibold text-rose-700" : ""}`}>{pct(g.par30)}</Td>
                 </tr>
               ))}
             </tbody>
@@ -179,15 +131,5 @@ export default function ReportsPage() {
         </Card>
       )}
     </>
-  );
-}
-
-function Kpi({ label, value, sub }: { label: string; value: string; sub: string }) {
-  return (
-    <Card className="p-5">
-      <p className="text-sm text-slate-500">{label}</p>
-      <p className="tabular mt-1 text-2xl font-semibold text-slate-900">{value}</p>
-      <p className="mt-1 text-xs text-slate-500">{sub}</p>
-    </Card>
   );
 }
