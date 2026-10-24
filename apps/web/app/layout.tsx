@@ -11,7 +11,7 @@ export const metadata: Metadata = {
   description: "Multi-tenant loan management for microfinance institutions, SACCOs and digital lenders.",
 };
 
-export const viewport: Viewport = { themeColor: "#07101f" };
+export const viewport: Viewport = { themeColor: "#1c100b" };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (

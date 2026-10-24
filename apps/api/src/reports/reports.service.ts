@@ -1,11 +1,11 @@
-import { Injectable } from '@nestjs/common';
-import { AGEING_BUCKETS, AgeingBucket, Permission } from '@anzelu/contracts';
-import { addMonths, dec, LoanPosition, m, portfolioAtRisk, sum, todayIn } from '@anzelu/finance';
-import { and, desc, eq, gte, lte, ne, sql } from 'drizzle-orm';
-import { AuthUser, scope, tenantOf } from '../common/auth';
-import { DB, InjectDb } from '../db/database';
-import { branches, customers, loanApplications, loanDisbursements, loanProducts, loans, paymentReversals, payments, users } from '../db/schema';
-import { positionOf, scheduleRowsByLoan } from '../loans/servicing';
+import { Injectable } from "@nestjs/common";
+import { AGEING_BUCKETS, AgeingBucket, Permission } from "@anzelu/contracts";
+import { addMonths, dec, LoanPosition, m, portfolioAtRisk, sum, todayIn } from "@anzelu/finance";
+import { and, desc, eq, gte, lte, ne, sql } from "drizzle-orm";
+import { AuthUser, scope, tenantOf } from "../common/auth";
+import { DB, InjectDb } from "../db/database";
+import { branches, customers, loanApplications, loanDisbursements, loanProducts, loans, paymentReversals, payments, users } from "../db/schema";
+import { positionOf, scheduleRowsByLoan } from "../loans/servicing";
 
 export interface PortfolioLoan {
   id: string;
@@ -13,6 +13,8 @@ export interface PortfolioLoan {
   status: string;
   principal: string;
   disbursedOn: string | null;
+  maturityDate: string | null;
+  customerId: string;
   customerName: string;
   phone: string;
   branchId: string;
@@ -37,6 +39,8 @@ export class ReportsService {
         status: loans.status,
         principal: loans.principal,
         disbursedOn: loans.disbursedOn,
+        maturityDate: loans.maturityDate,
+        customerId: loans.customerId,
         customerName: sql<string>`${customers.firstName} || ' ' || ${customers.lastName}`,
         phone: customers.phone,
         branchId: loans.branchId,
@@ -50,8 +54,12 @@ export class ReportsService {
       .innerJoin(branches, eq(loans.branchId, branches.id))
       .innerJoin(users, eq(loans.officerId, users.id))
       .innerJoin(loanProducts, eq(loans.productId, loanProducts.id))
-      .where(and(scope(user, loans.tenantId, loans.branchId), eq(loans.status, 'active')));
-    const schedules = await scheduleRowsByLoan(this.db, tenantId, rows.map((r) => r.id));
+      .where(and(scope(user, loans.tenantId, loans.branchId), eq(loans.status, "active")));
+    const schedules = await scheduleRowsByLoan(
+      this.db,
+      tenantId,
+      rows.map((r) => r.id),
+    );
     return rows.map((r) => ({ ...r, position: positionOf(schedules.get(r.id) ?? [], asOf) }));
   }
 
@@ -75,15 +83,19 @@ export class ReportsService {
         .select({ month: sql<string>`to_char(${payments.receivedOn}, 'YYYY-MM')`, total: sql<string>`sum(${payments.amount})::text` })
         .from(payments)
         .innerJoin(loans, eq(payments.loanId, loans.id))
-        .where(and(loanScope, eq(payments.status, 'posted'), gte(payments.receivedOn, trendStart), lte(payments.receivedOn, asOf)))
+        .where(and(loanScope, eq(payments.status, "posted"), gte(payments.receivedOn, trendStart), lte(payments.receivedOn, asOf)))
         .groupBy(sql`1`),
       this.db
         .select({ month: sql<string>`to_char(${loanDisbursements.valueDate}, 'YYYY-MM')`, total: sql<string>`sum(${loanDisbursements.amount})::text` })
         .from(loanDisbursements)
         .innerJoin(loans, eq(loanDisbursements.loanId, loans.id))
-        .where(and(loanScope, eq(loanDisbursements.status, 'completed'), gte(loanDisbursements.valueDate, trendStart)))
+        .where(and(loanScope, eq(loanDisbursements.status, "completed"), gte(loanDisbursements.valueDate, trendStart)))
         .groupBy(sql`1`),
-      this.db.select({ status: loans.status, count: sql<number>`count(*)::int` }).from(loans).where(loanScope).groupBy(loans.status),
+      this.db
+        .select({ status: loans.status, count: sql<number>`count(*)::int` })
+        .from(loans)
+        .where(loanScope)
+        .groupBy(loans.status),
       this.db
         .select({
           id: loanApplications.id,
@@ -102,16 +114,16 @@ export class ReportsService {
       this.db
         .select({ count: sql<number>`count(*)::int` })
         .from(loanApplications)
-        .where(and(scope(user, loanApplications.tenantId, loanApplications.branchId), eq(loanApplications.status, 'submitted'))),
+        .where(and(scope(user, loanApplications.tenantId, loanApplications.branchId), eq(loanApplications.status, "submitted"))),
       this.db
         .select({ count: sql<number>`count(*)::int` })
         .from(loanDisbursements)
         .innerJoin(loans, eq(loanDisbursements.loanId, loans.id))
-        .where(and(loanScope, eq(loanDisbursements.status, 'requested'))),
+        .where(and(loanScope, eq(loanDisbursements.status, "requested"))),
       this.db
         .select({ count: sql<number>`count(*)::int` })
         .from(paymentReversals)
-        .where(and(eq(paymentReversals.tenantId, tenantId), eq(paymentReversals.status, 'pending'))),
+        .where(and(eq(paymentReversals.tenantId, tenantId), eq(paymentReversals.status, "pending"))),
     ]);
 
     const months = Array.from({ length: 6 }, (_, i) => addMonths(trendStart, i).slice(0, 7));
@@ -143,8 +155,14 @@ export class ReportsService {
         collectedThisMonth: m(collected),
         dueThisMonth: m(due),
         collectionEfficiencyPct: due.gt(0) ? collected.div(due).times(100).toFixed(1) : null,
-        par30: portfolioAtRisk(book.map((l) => ({ principalOutstanding: l.position.principalOutstanding, daysPastDue: l.position.daysPastDue })), 30),
-        par90: portfolioAtRisk(book.map((l) => ({ principalOutstanding: l.position.principalOutstanding, daysPastDue: l.position.daysPastDue })), 90),
+        par30: portfolioAtRisk(
+          book.map((l) => ({ principalOutstanding: l.position.principalOutstanding, daysPastDue: l.position.daysPastDue })),
+          30,
+        ),
+        par90: portfolioAtRisk(
+          book.map((l) => ({ principalOutstanding: l.position.principalOutstanding, daysPastDue: l.position.daysPastDue })),
+          90,
+        ),
       },
       buckets,
       trend: months.map((month) => ({ month, collected: m(c.get(month) ?? 0), disbursed: m(d.get(month) ?? 0) })),
@@ -167,20 +185,20 @@ export class ReportsService {
     const count = sql<number>`count(*)::int`;
     const zero = Promise.resolve([{ count: 0 }]);
     const [apps, disb, revs, kyc] = await Promise.all([
-      can('applications:decide')
+      can("applications:decide")
         ? this.db
             .select({ count })
             .from(loanApplications)
             .where(
               and(
                 scope(user, loanApplications.tenantId, loanApplications.branchId),
-                eq(loanApplications.status, 'submitted'),
+                eq(loanApplications.status, "submitted"),
                 ne(loanApplications.submittedBy, user.id),
                 lte(loanApplications.amount, user.approvalLimit),
               ),
             )
         : zero,
-      can('disbursements:authorise')
+      can("disbursements:authorise")
         ? this.db
             .select({ count })
             .from(loanDisbursements)
@@ -188,23 +206,23 @@ export class ReportsService {
             .where(
               and(
                 scope(user, loans.tenantId, loans.branchId),
-                eq(loanDisbursements.status, 'requested'),
+                eq(loanDisbursements.status, "requested"),
                 ne(loanDisbursements.requestedBy, user.id),
                 ne(loans.approvedBy, user.id),
               ),
             )
         : zero,
-      can('payments:reverse:approve')
+      can("payments:reverse:approve")
         ? this.db
             .select({ count })
             .from(paymentReversals)
-            .where(and(eq(paymentReversals.tenantId, user.tenantId), eq(paymentReversals.status, 'pending'), ne(paymentReversals.requestedBy, user.id)))
+            .where(and(eq(paymentReversals.tenantId, user.tenantId), eq(paymentReversals.status, "pending"), ne(paymentReversals.requestedBy, user.id)))
         : zero,
-      can('customers:verify')
+      can("customers:verify")
         ? this.db
             .select({ count })
             .from(customers)
-            .where(and(scope(user, customers.tenantId, customers.branchId), eq(customers.kycStatus, 'pending')))
+            .where(and(scope(user, customers.tenantId, customers.branchId), eq(customers.kycStatus, "pending")))
         : zero,
     ]);
     const result = { applications: apps[0].count, disbursements: disb[0].count, reversals: revs[0].count, kyc: kyc[0].count };
@@ -225,7 +243,10 @@ export class ReportsService {
         name: g.name,
         activeLoans: g.loans.length,
         outstandingPrincipal: m(sum(g.loans.map((l) => l.position.principalOutstanding))),
-        par30: portfolioAtRisk(g.loans.map((l) => ({ principalOutstanding: l.position.principalOutstanding, daysPastDue: l.position.daysPastDue })), 30),
+        par30: portfolioAtRisk(
+          g.loans.map((l) => ({ principalOutstanding: l.position.principalOutstanding, daysPastDue: l.position.daysPastDue })),
+          30,
+        ),
       }))
       .sort((a, b) => Number(b.outstandingPrincipal) - Number(a.outstandingPrincipal));
   }

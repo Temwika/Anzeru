@@ -5,11 +5,13 @@ import {
   Calculator,
   FileCheck2,
   Landmark,
-  LockKeyhole,
+  MapPin,
+  Phone,
   ReceiptText,
   ShieldCheck,
   Smartphone,
-  Wallet,
+  Store,
+  UsersRound,
 } from "lucide-react";
 import Link from "next/link";
 import { APPLY_HREF, PhoneMock, ProductCalculator, ProductCatalogue } from "@/components/landing";
@@ -18,16 +20,24 @@ import { Logo } from "@/components/logo";
 /** Licence wording is set per deployment (e.g. "Licensed by the Bank of Zambia, licence no. …") and only shown when provided. */
 const LICENCE = process.env.NEXT_PUBLIC_LICENCE_TEXT;
 
+/** The Marketeers Loan price sheet: 40% flat for the whole loan, repaid in 28 daily payments. */
+const MARKETEERS = Array.from({ length: 10 }, (_, i) => {
+  const amount = (i + 1) * 500;
+  return { amount, daily: (amount * 1.4) / 28, total: amount * 1.4 };
+});
+// Formatted by hand so the server and browser render the same text.
+const k = (n: number) => `K${String(Math.round(n)).replace(/\B(?=(\d{3})+(?!\d))/g, ",")}`;
+
 const TRUST = [
-  { icon: ReceiptText, title: "Full price upfront", body: "Instalment, total cost and APR before you apply." },
-  { icon: BadgeCheck, title: "No early-repayment penalty", body: "Pay off any time and future interest is waived." },
-  { icon: Wallet, title: "MTN MoMo & Airtel Money", body: "Pay from your phone and get a receipt instantly." },
-  { icon: LockKeyhole, title: "Your data protected", body: "Handled under the Data Protection Act, 2021." },
+  { icon: Store, title: "Made for marketeers", body: "K500 to K5,000 to restock your stall or grow your trade." },
+  { icon: ReceiptText, title: "Small daily payments", body: "From K25 a day for 28 days, with the full price shown upfront." },
+  { icon: UsersRound, title: "Grow together", body: "Join a market group that meets and repays together." },
+  { icon: BadgeCheck, title: "A receipt every time", body: "Cash, MTN MoMo, Airtel Money or bank, always with a receipt." },
 ];
 
 const STEPS = [
   { icon: Calculator, title: "Choose and see your price", body: "Pick a loan, slide to the amount and term you want, and see exactly what you’ll repay." },
-  { icon: FileCheck2, title: "Tell us about you", body: "Add your income and snap a photo of your NRC and payslip. It takes a few minutes." },
+  { icon: FileCheck2, title: "Tell us about you", body: "Bring your NRC and tell us about your business. Our loan officer can visit you at the market." },
   {
     icon: Smartphone,
     title: "Get a decision and your money",
@@ -44,11 +54,11 @@ const CONTROLS = [
 const FAQ = [
   {
     q: "Who can apply?",
-    a: "Zambian residents aged 18 or over with a valid NRC and a regular income: a salary, a registered business, trading or farming. Some business loans also need a guarantor.",
+    a: "Zambian residents aged 18 or over with a valid NRC and a steady income, such as a market stall, a small business, farming or a salary. Marketeers can apply alone or as part of a market group.",
   },
   {
     q: "What documents do I need?",
-    a: "Your NRC and your latest payslip. For business loans we may also ask for your trading licence and recent bank statements.",
+    a: "Your NRC. For larger amounts we may also ask for your market levy card or trading licence, and recent mobile-money statements.",
   },
   {
     q: "How long does a decision take?",
@@ -59,12 +69,16 @@ const FAQ = [
     a: "No. The processing fee, the interest and the APR are all shown before you apply, and the same figures go into your loan agreement.",
   },
   {
+    q: "How does the Marketeers Loan work?",
+    a: "Borrow from K500 to K5,000. The charge is 40% for the whole loan, and you repay in 28 equal daily payments. For example, borrow K1,000 and pay K50 a day, K1,400 in total.",
+  },
+  {
     q: "Can I repay early?",
     a: "Yes, with no penalty. Paying off early clears what’s due plus the current period’s interest; interest for later periods is waived.",
   },
   {
     q: "How do I make payments?",
-    a: "Tap Pay now in the app and approve the prompt on your MTN MoMo or Airtel Money phone, or pay from your wallet menu using your loan number as the reference.",
+    a: "Pay cash to your loan officer or at our office and you get a printed receipt. You can also pay by MTN MoMo, Airtel Money or bank transfer, using your loan number as the reference.",
   },
 ];
 
@@ -78,6 +92,7 @@ export default function Home() {
           </Link>
           <nav className="flex items-center gap-1">
             {[
+              ["#daily", "Marketeers Loan"],
               ["#loans", "Loans"],
               ["#how", "How it works"],
               ["#calculator", "Calculator"],
@@ -107,10 +122,11 @@ export default function Home() {
               <BadgeCheck className="size-3.5" /> Chilimbitso Money Lending · Zambia
             </p>
             <h1 className="mt-6 font-display text-[40px] font-bold leading-[1.06] sm:text-[60px]">
-              Loans that fit <span className="text-brand-400">your payday.</span>
+              Grow your stall. <span className="text-brand-400">Repay a little every day.</span>
             </h1>
             <p className="mt-5 max-w-xl text-lg leading-relaxed text-slate-300">
-              Salary advances, business and farming loans with the full price shown before you apply, payments from your phone, and no penalty for paying early.
+              Marketeers loans from K500 to K5,000, repaid in small daily payments over 28 days. Clear prices, printed receipts, and a loan officer who knows
+              your market.
             </p>
             <div className="mt-8 flex flex-wrap gap-3">
               <Link
@@ -166,7 +182,62 @@ export default function Home() {
         </div>
       </section>
 
-      <section id="how" className="scroll-mt-20 bg-white">
+      <section id="daily" className="scroll-mt-20 bg-white">
+        <div className="mx-auto grid max-w-6xl gap-10 px-4 py-16 sm:px-6 lg:grid-cols-[1fr_1.2fr] lg:items-center">
+          <div>
+            <p className="text-sm font-semibold uppercase tracking-wide text-brand-700">Marketeers Loan</p>
+            <h2 className="mt-2 font-display text-3xl font-bold text-slate-900">28 days. One small payment a day.</h2>
+            <p className="mt-3 text-slate-600">
+              Choose your amount and you know your daily payment straight away. The charge is 40% for the whole loan, with no hidden fees. Pay every day and you
+              are done in four weeks.
+            </p>
+            <dl className="mt-8 grid grid-cols-3 gap-3 text-center">
+              {[
+                ["K500–K5,000", "Loan amount"],
+                ["28 days", "To repay"],
+                ["40%", "For the whole loan"],
+              ].map(([v, l]) => (
+                <div key={l} className="rounded-2xl bg-brand-50 px-2 py-4">
+                  <dd className="font-display text-lg font-bold text-brand-800">{v}</dd>
+                  <dt className="mt-1 text-xs text-slate-600">{l}</dt>
+                </div>
+              ))}
+            </dl>
+            <Link
+              href={APPLY_HREF}
+              className="mt-8 inline-flex items-center gap-2 rounded-xl bg-brand-500 px-6 py-3.5 text-sm font-semibold text-white hover:bg-brand-600"
+            >
+              Apply for a Marketeers Loan <ArrowRight className="size-4" />
+            </Link>
+          </div>
+          <div className="overflow-hidden rounded-3xl border border-slate-200 shadow-card">
+            <div className="bg-ink-950 px-6 py-4 text-white">
+              <p className="font-display font-semibold">Loan repayment schedule · 28 days</p>
+              <p className="text-xs text-slate-400">What you borrow, what you pay each day, and the total</p>
+            </div>
+            <table className="tabular w-full text-sm">
+              <thead>
+                <tr className="bg-brand-500 text-left text-xs font-semibold uppercase tracking-wide text-white">
+                  <th className="px-6 py-2.5">Loan amount</th>
+                  <th className="px-6 py-2.5 text-right">Daily payment</th>
+                  <th className="px-6 py-2.5 text-right">Total to repay</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100 bg-white">
+                {MARKETEERS.map((m) => (
+                  <tr key={m.amount} className="even:bg-brand-50/40">
+                    <td className="px-6 py-2.5 font-semibold text-slate-900">{k(m.amount)}</td>
+                    <td className="px-6 py-2.5 text-right font-semibold text-brand-700">{k(m.daily)}</td>
+                    <td className="px-6 py-2.5 text-right text-slate-700">{k(m.total)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <section id="how" className="scroll-mt-20">
         <div className="mx-auto max-w-6xl px-4 py-16 sm:px-6">
           <p className="text-sm font-semibold uppercase tracking-wide text-brand-700">How it works</p>
           <h2 className="mt-2 font-display text-3xl font-bold text-slate-900">Three steps to your money</h2>
@@ -238,12 +309,34 @@ export default function Home() {
         </div>
       </section>
 
-      <footer className="border-t border-slate-200 bg-white">
-        <div className="mx-auto flex max-w-6xl flex-col gap-3 px-4 py-8 text-sm text-slate-500 sm:flex-row sm:items-center sm:justify-between sm:px-6">
-          <span>© 2026 Chilimbitso Money Lending · Platform by Uplift Services Limited</span>
-          <Link href="/login" className="hover:text-slate-900">
-            Staff sign in
-          </Link>
+      <footer className="bg-ink-950 text-slate-400">
+        <div className="mx-auto grid max-w-6xl gap-8 px-4 py-12 sm:px-6 md:grid-cols-3">
+          <div>
+            <Logo dark tagline />
+            <p className="mt-4 max-w-xs text-sm">Loans for marketeers and small businesses in Eastern Province.</p>
+          </div>
+          <div className="space-y-2 text-sm">
+            <p className="font-semibold text-white">Visit us</p>
+            <p className="flex items-start gap-2">
+              <MapPin className="mt-0.5 size-4 shrink-0 text-brand-400" /> Sinda District, Eastern Province, Zambia
+            </p>
+          </div>
+          <div className="space-y-2 text-sm">
+            <p className="font-semibold text-white">Call us</p>
+            {["+260 977 700 630", "+260 976 944 665"].map((p) => (
+              <a key={p} href={`tel:${p.replaceAll(" ", "")}`} className="flex items-center gap-2 hover:text-white">
+                <Phone className="size-4 text-brand-400" /> {p}
+              </a>
+            ))}
+          </div>
+        </div>
+        <div className="border-t border-white/10">
+          <div className="mx-auto flex max-w-6xl flex-col gap-3 px-4 py-5 text-xs sm:flex-row sm:items-center sm:justify-between sm:px-6">
+            <span>© 2026 Chilimbitso Money Lending · Together, We Grow</span>
+            <Link href="/login" className="hover:text-white">
+              Staff sign in
+            </Link>
+          </div>
         </div>
       </footer>
     </div>

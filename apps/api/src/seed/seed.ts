@@ -1,20 +1,20 @@
-import { INestApplicationContext, Logger } from '@nestjs/common';
-import { Channel, Role } from '@anzelu/contracts';
-import { addDays, addMonths, dec, m, todayIn } from '@anzelu/finance';
-import { and, asc, eq } from 'drizzle-orm';
-import { ApplicationsService } from '../applications/applications.service';
-import { hashPassword } from '../auth/crypto';
-import { AuthUser, loadAuthUser } from '../common/auth';
-import { AuditService } from '../core/audit.service';
-import { ACCOUNTS, LedgerService } from '../core/ledger.service';
-import { CustomersService } from '../customers/customers.service';
-import { DB, DB_TOKEN } from '../db/database';
-import { branches, customers, loanProducts, loanScheduleItems, tenants, userBranchAccess, users } from '../db/schema';
-import { LoansService } from '../loans/loans.service';
-import { PaymentsService } from '../payments/payments.service';
+import { INestApplicationContext, Logger } from "@nestjs/common";
+import { Channel, Role } from "@anzelu/contracts";
+import { addDays, addMonths, dec, m, todayIn } from "@anzelu/finance";
+import { and, asc, eq, inArray } from "drizzle-orm";
+import { ApplicationsService } from "../applications/applications.service";
+import { hashPassword } from "../auth/crypto";
+import { AuthUser, loadAuthUser } from "../common/auth";
+import { AuditService } from "../core/audit.service";
+import { ACCOUNTS, LedgerService } from "../core/ledger.service";
+import { CustomersService } from "../customers/customers.service";
+import { DB, DB_TOKEN } from "../db/database";
+import { branches, customers, loanGroups, loanProducts, loanScheduleItems, tenants, userBranchAccess, users } from "../db/schema";
+import { LoansService } from "../loans/loans.service";
+import { PaymentsService } from "../payments/payments.service";
 
 /** Demo password for every seeded account (development data only). */
-export const DEMO_PASSWORD = 'Demo2026!pass';
+export const DEMO_PASSWORD = "Demo2026!pass";
 
 /** Deterministic PRNG so every fresh database gets the same demo book. */
 function rng(seed: number) {
@@ -24,15 +24,102 @@ function rng(seed: number) {
   };
 }
 
-const FIRST = ['Chanda', 'Mwila', 'Bwalya', 'Mutale', 'Natasha', 'Kondwani', 'Thandiwe', 'Musonda', 'Chilufya', 'Mapalo', 'Lubinda', 'Nalukui', 'Kalaba', 'Mulenga', 'Chipo', 'Kabwe', 'Lweendo', 'Inonge', 'Mwansa', 'Zyambo', 'Namakau', 'Chisanga', 'Taonga', 'Chomba', 'Mukuka', 'Precious', 'Sepo', 'Kasonde', 'Mubanga', 'Nchimunya', 'Chimwemwe', 'Luyando', 'Mwape', 'Kunda', 'Malama', 'Chabala'];
-const LAST = ['Banda', 'Phiri', 'Mwanza', 'Tembo', 'Zulu', 'Mulenga', 'Chileshe', 'Lungu', 'Sakala', 'Mumba', 'Ngoma', 'Kaunda', 'Mwale', 'Daka', 'Chirwa', 'Siame', 'Musonda', 'Hamoonga', 'Simukonda', 'Kapembwa'];
-const EMPLOYERS = ['Ministry of Health', 'Zambia Revenue Authority', 'ZESCO Limited', 'Copperbelt University', 'Lusaka City Council', 'Shoprite Zambia', 'Zambia National Commercial Bank', 'Ministry of Education', null, null, null];
-const PURPOSES = ['School fees', 'Restock shop inventory', 'Medical expenses', 'Home improvement', 'Purchase farming inputs', 'Working capital', 'Vehicle repairs', 'Buy a freezer for the business'];
+const FIRST = [
+  "Chanda",
+  "Mwila",
+  "Bwalya",
+  "Mutale",
+  "Natasha",
+  "Kondwani",
+  "Thandiwe",
+  "Musonda",
+  "Chilufya",
+  "Mapalo",
+  "Lubinda",
+  "Nalukui",
+  "Kalaba",
+  "Mulenga",
+  "Chipo",
+  "Kabwe",
+  "Lweendo",
+  "Inonge",
+  "Mwansa",
+  "Zyambo",
+  "Namakau",
+  "Chisanga",
+  "Taonga",
+  "Chomba",
+  "Mukuka",
+  "Precious",
+  "Sepo",
+  "Kasonde",
+  "Mubanga",
+  "Nchimunya",
+  "Chimwemwe",
+  "Luyando",
+  "Mwape",
+  "Kunda",
+  "Malama",
+  "Chabala",
+];
+const LAST = [
+  "Banda",
+  "Phiri",
+  "Mwanza",
+  "Tembo",
+  "Zulu",
+  "Mulenga",
+  "Chileshe",
+  "Lungu",
+  "Sakala",
+  "Mumba",
+  "Ngoma",
+  "Kaunda",
+  "Mwale",
+  "Daka",
+  "Chirwa",
+  "Siame",
+  "Musonda",
+  "Hamoonga",
+  "Simukonda",
+  "Kapembwa",
+];
+const EMPLOYERS = [
+  "Ministry of Health",
+  "Zambia Revenue Authority",
+  "ZESCO Limited",
+  "Copperbelt University",
+  "Lusaka City Council",
+  "Shoprite Zambia",
+  "Zambia National Commercial Bank",
+  "Ministry of Education",
+  null,
+  null,
+  null,
+  null,
+  null,
+  null,
+  null,
+  null,
+  null,
+  null,
+  null,
+];
+const PURPOSES = [
+  "School fees",
+  "Restock shop inventory",
+  "Medical expenses",
+  "Home improvement",
+  "Purchase farming inputs",
+  "Working capital",
+  "Vehicle repairs",
+  "Buy a freezer for the business",
+];
 
-type Behaviour = 'good' | 'late' | 'stopped' | 'early';
+type Behaviour = "good" | "late" | "stopped" | "early";
 
 export async function seedDemo(app: INestApplicationContext) {
-  const log = new Logger('Seed');
+  const log = new Logger("Seed");
   const db = app.get<DB>(DB_TOKEN);
   const ledger = app.get(LedgerService);
   const audit = app.get(AuditService);
@@ -42,33 +129,47 @@ export async function seedDemo(app: INestApplicationContext) {
   const paymentsSvc = app.get(PaymentsService);
   const rand = rng(20261024);
   const pick = <T>(xs: T[]) => xs[Math.floor(rand() * xs.length)];
-  const today = todayIn('Africa/Lusaka');
-  log.log('Seeding demo institution…');
+  const today = todayIn("Africa/Lusaka");
+  log.log("Seeding demo institution…");
 
   const passwordHash = await hashPassword(DEMO_PASSWORD);
-  const [tenant] = await db.insert(tenants).values({ name: 'Chilimbitso Money Lending', code: 'DEMO', plan: 'growth' }).returning();
+  const [tenant] = await db
+    .insert(tenants)
+    .values({
+      name: "Chilimbitso Money Lending",
+      code: "DEMO",
+      plan: "growth",
+      profile: {
+        tradingName: "Chilimbitso Loans",
+        tagline: "Together, We Grow",
+        address: "Sinda District, Eastern Province, Zambia",
+        phones: "+260 977 700 630 / +260 976 944 665",
+        receiptNote: "Thank you for your payment. Please keep this receipt for your records.",
+      },
+    })
+    .returning();
   const tenantId = tenant.id;
   await ledger.seedChart(db, tenantId);
-  await db.insert(tenants).values({ name: 'Copperbelt Teachers SACCO', code: 'CBTSACCO', plan: 'starter' });
+  await db.insert(tenants).values({ name: "Copperbelt Teachers SACCO", code: "CBTSACCO", plan: "starter" });
 
   const [lsk, ktw, ndl] = await db
     .insert(branches)
     .values([
-      { tenantId, name: 'Lusaka Main', code: 'LSK', address: 'Cairo Road, Lusaka' },
-      { tenantId, name: 'Kitwe', code: 'KTW', address: 'Obote Avenue, Kitwe' },
-      { tenantId, name: 'Ndola', code: 'NDL', address: 'Broadway, Ndola' },
+      { tenantId, name: "Sinda Main", code: "SND", address: "Great East Road, Sinda" },
+      { tenantId, name: "Katete", code: "KTT", address: "Katete Central, Katete" },
+      { tenantId, name: "Petauke", code: "PTK", address: "Petauke Central, Petauke" },
     ])
     .returning();
 
   const staff: { key: string; email: string; fullName: string; role: Role; limit?: string; branches?: string[]; tenant?: boolean }[] = [
-    { key: 'platform', email: 'platform@chilimbitso.zm', fullName: 'Platform Operator', role: 'platform_admin', tenant: false },
-    { key: 'admin', email: 'admin@demo.zm', fullName: 'Grace Mwansa', role: 'institution_admin' },
-    { key: 'officer', email: 'officer@demo.zm', fullName: 'Joseph Banda', role: 'credit_officer', branches: [lsk.id] },
-    { key: 'officer2', email: 'officer.copperbelt@demo.zm', fullName: 'Ruth Chileshe', role: 'credit_officer', branches: [ktw.id, ndl.id] },
-    { key: 'manager', email: 'manager@demo.zm', fullName: 'Peter Mulenga', role: 'credit_manager', limit: '150000' },
-    { key: 'cashier', email: 'cashier@demo.zm', fullName: 'Agnes Tembo', role: 'cashier', branches: [lsk.id, ktw.id, ndl.id] },
-    { key: 'accountant', email: 'accountant@demo.zm', fullName: 'Mwila Phiri', role: 'accountant' },
-    { key: 'auditor', email: 'auditor@demo.zm', fullName: 'Inonge Siame', role: 'auditor' },
+    { key: "platform", email: "platform@chilimbitso.zm", fullName: "Platform Operator", role: "platform_admin", tenant: false },
+    { key: "admin", email: "admin@demo.zm", fullName: "Grace Mwansa", role: "institution_admin" },
+    { key: "officer", email: "officer@demo.zm", fullName: "Joseph Banda", role: "credit_officer", branches: [lsk.id] },
+    { key: "officer2", email: "officer.copperbelt@demo.zm", fullName: "Ruth Chileshe", role: "credit_officer", branches: [ktw.id, ndl.id] },
+    { key: "manager", email: "manager@demo.zm", fullName: "Peter Mulenga", role: "credit_manager", limit: "150000" },
+    { key: "cashier", email: "cashier@demo.zm", fullName: "Agnes Tembo", role: "cashier", branches: [lsk.id, ktw.id, ndl.id] },
+    { key: "accountant", email: "accountant@demo.zm", fullName: "Mwila Phiri", role: "accountant" },
+    { key: "auditor", email: "auditor@demo.zm", fullName: "Inonge Siame", role: "auditor" },
   ];
   const ids: Record<string, string> = {};
   for (const s of staff) {
@@ -80,44 +181,111 @@ export async function seedDemo(app: INestApplicationContext) {
         passwordHash,
         fullName: s.fullName,
         role: s.role,
-        approvalLimit: s.limit ?? '0',
+        approvalLimit: s.limit ?? "0",
       })
       .returning({ id: users.id });
     ids[s.key] = u.id;
     for (const b of s.branches ?? []) await db.insert(userBranchAccess).values({ userId: u.id, branchId: b, tenantId });
   }
   const as = async (key: string) => (await loadAuthUser(db, ids[key])) as AuthUser;
-  const [officer, officer2, manager, accountant, cashier] = await Promise.all(['officer', 'officer2', 'manager', 'accountant', 'cashier'].map(as));
+  const [officer, officer2, manager, accountant, cashier] = await Promise.all(["officer", "officer2", "manager", "accountant", "cashier"].map(as));
 
   // Lending capital injected nine months ago.
   await ledger.post(db, {
     tenantId,
     date: addMonths(today, -9),
-    description: 'Capital injection: lending fund',
-    sourceType: 'capital',
+    description: "Capital injection: lending fund",
+    sourceType: "capital",
     postedBy: ids.accountant,
     lines: [
-      { account: ACCOUNTS.bank, debit: '2500000' },
-      { account: ACCOUNTS.capital, credit: '2500000' },
+      { account: ACCOUNTS.bank, debit: "2500000" },
+      { account: ACCOUNTS.capital, credit: "2500000" },
     ],
   });
 
   const productRows = await db
     .insert(loanProducts)
     .values([
-      { tenantId, name: 'Salary Advance', code: 'SAL', description: 'Payroll-backed loans for formally employed customers', interestMethod: 'flat', annualRatePct: '30', repaymentFrequency: 'monthly', minAmount: '1000', maxAmount: '50000', minTerm: 1, maxTerm: 12, processingFeePct: '3', penaltyPct: '5', graceDays: 3, maxDtiPct: '40' },
-      { tenantId, name: 'SME Working Capital', code: 'SME', description: 'Amortising loans for registered small businesses', interestMethod: 'reducing_balance', annualRatePct: '36', repaymentFrequency: 'monthly', minAmount: '5000', maxAmount: '250000', minTerm: 3, maxTerm: 24, processingFeePct: '2.5', penaltyPct: '5', graceDays: 5, maxDtiPct: '45', requiresGuarantor: true },
-      { tenantId, name: 'Market Trader Weekly', code: 'MKT', description: 'Small weekly-repayment loans for market traders', interestMethod: 'flat', annualRatePct: '52', repaymentFrequency: 'weekly', minAmount: '500', maxAmount: '10000', minTerm: 4, maxTerm: 26, processingFeePct: '2', penaltyPct: '3', graceDays: 1, maxDtiPct: '50' },
-      { tenantId, name: 'Agri Input Bullet', code: 'AGR', description: 'Seasonal input finance: monthly interest, principal at harvest', interestMethod: 'interest_only', annualRatePct: '30', repaymentFrequency: 'monthly', minAmount: '2000', maxAmount: '80000', minTerm: 3, maxTerm: 9, processingFeePct: '2', penaltyPct: '5', graceDays: 7, maxDtiPct: '45' },
+      {
+        tenantId,
+        name: "Salary Advance",
+        code: "SAL",
+        description: "Payroll-backed loans for formally employed customers",
+        interestMethod: "flat",
+        annualRatePct: "30",
+        repaymentFrequency: "monthly",
+        minAmount: "1000",
+        maxAmount: "50000",
+        minTerm: 1,
+        maxTerm: 12,
+        processingFeePct: "3",
+        penaltyPct: "5",
+        graceDays: 3,
+        maxDtiPct: "40",
+      },
+      {
+        tenantId,
+        name: "SME Working Capital",
+        code: "SME",
+        description: "Amortising loans for registered small businesses",
+        interestMethod: "reducing_balance",
+        annualRatePct: "36",
+        repaymentFrequency: "monthly",
+        minAmount: "5000",
+        maxAmount: "250000",
+        minTerm: 3,
+        maxTerm: 24,
+        processingFeePct: "2.5",
+        penaltyPct: "5",
+        graceDays: 5,
+        maxDtiPct: "45",
+        requiresGuarantor: true,
+      },
+      // The 28-day marketeers loan: 5% of the loan paid each day, K500 borrowed → K700 repaid.
+      {
+        tenantId,
+        name: "Marketeers Loan",
+        code: "MKT",
+        description: "28-day loan for market traders, repaid in small daily amounts",
+        interestMethod: "flat_term",
+        annualRatePct: "40",
+        repaymentFrequency: "daily",
+        minAmount: "500",
+        maxAmount: "5000",
+        minTerm: 28,
+        maxTerm: 28,
+        processingFeePct: "0",
+        penaltyPct: "0",
+        graceDays: 0,
+        maxDtiPct: "50",
+      },
+      {
+        tenantId,
+        name: "Agri Input Bullet",
+        code: "AGR",
+        description: "Seasonal input finance: monthly interest, principal at harvest",
+        interestMethod: "interest_only",
+        annualRatePct: "30",
+        repaymentFrequency: "monthly",
+        minAmount: "2000",
+        maxAmount: "80000",
+        minTerm: 3,
+        maxTerm: 9,
+        processingFeePct: "2",
+        penaltyPct: "5",
+        graceDays: 7,
+        maxDtiPct: "45",
+      },
     ])
     .returning();
   const product = Object.fromEntries(productRows.map((p) => [p.code, p]));
 
-  const pdf = Buffer.from('%PDF-1.4\n1 0 obj<<>>endobj\ntrailer<<>>\n%%EOF\n');
-  const fakeFile = (name: string) => ({ originalname: name, mimetype: 'application/pdf', size: pdf.length, buffer: pdf }) as Express.Multer.File;
+  const pdf = Buffer.from("%PDF-1.4\n1 0 obj<<>>endobj\ntrailer<<>>\n%%EOF\n");
+  const fakeFile = (name: string) => ({ originalname: name, mimetype: "application/pdf", size: pdf.length, buffer: pdf }) as Express.Multer.File;
 
   let loanCount = 0;
   const N = 36;
+  const traders: { customerId: string; branchId: string }[] = [];
   for (let i = 0; i < N; i++) {
     const branch = i % 3 === 0 ? lsk : i % 3 === 1 ? ktw : ndl;
     const maker = branch.id === lsk.id ? officer : officer2;
@@ -130,31 +298,35 @@ export async function seedDemo(app: INestApplicationContext) {
       firstName: first,
       lastName: last,
       nrc: `${String(100000 + Math.floor(rand() * 899999))}/${String(10 + Math.floor(rand() * 89))}/1`,
-      phone: `09${pick(['6', '7', '5'])}${String(1000000 + Math.floor(rand() * 8999999))}`,
+      phone: `09${pick(["6", "7", "5"])}${String(1000000 + Math.floor(rand() * 8999999))}`,
       email: `${first}.${last}${i}@example.com`.toLowerCase(),
-      dateOfBirth: `${1965 + Math.floor(rand() * 35)}-${String(1 + Math.floor(rand() * 12)).padStart(2, '0')}-${String(1 + Math.floor(rand() * 27)).padStart(2, '0')}`,
-      gender: i % 2 ? 'male' : 'female',
-      address: `Plot ${100 + i}, ${pick(['Kabulonga', 'Chelstone', 'Matero', 'Nkana East', 'Riverside', 'Kansenshi', 'Northrise', 'Woodlands'])}`,
+      dateOfBirth: `${1965 + Math.floor(rand() * 35)}-${String(1 + Math.floor(rand() * 12)).padStart(2, "0")}-${String(1 + Math.floor(rand() * 27)).padStart(2, "0")}`,
+      gender: i % 2 ? "male" : "female",
+      address: `Plot ${100 + i}, ${pick(["Sinda Boma", "Kapara", "Sinda Market", "Katete Central", "Mphangwe", "Petauke Central", "Nyika", "Chipata Road"])}`,
       employer: employer ?? undefined,
-      occupation: employer ? 'Salaried employee' : pick(['Trader', 'Farmer', 'Shop owner', 'Tailor', 'Transporter']),
+      occupation: employer ? "Salaried employee" : pick(["Trader", "Farmer", "Shop owner", "Tailor", "Transporter"]),
       monthlyIncome: String(income),
       nextOfKinName: `${pick(FIRST)} ${last}`,
       nextOfKinPhone: `097${String(1000000 + Math.floor(rand() * 8999999))}`,
       consent: true,
     });
-    await customersSvc.addDocument(maker, c.id, 'nrc', fakeFile(`nrc-${c.customerNumber}.pdf`));
+    await customersSvc.addDocument(maker, c.id, "nrc", fakeFile(`nrc-${c.customerNumber}.pdf`));
     if (i >= N - 2) continue; // two brand-new customers awaiting KYC
-    await customersSvc.decideKyc(manager, c.id, 'verified', 'NRC sighted and verified against original');
+    await customersSvc.decideKyc(manager, c.id, "verified", "NRC sighted and verified against original");
 
-    const code = employer ? (rand() < 0.75 ? 'SAL' : 'SME') : pick(['MKT', 'MKT', 'SME', 'AGR']);
+    const code = employer ? (rand() < 0.75 ? "SAL" : "SME") : pick(["MKT", "MKT", "MKT", "MKT", "SME", "AGR"]);
     const p = product[code];
-    const term = code === 'MKT' ? pick([8, 12, 16, 20]) : code === 'AGR' ? pick([4, 6]) : code === 'SAL' ? pick([6, 9, 12]) : pick([6, 12, 18]);
-    const maxForIncome = Math.min(Number(p.maxAmount), income * (code === 'MKT' ? 1.2 : 3));
-    const amount = String(Math.max(Number(p.minAmount), Math.round((maxForIncome * (0.4 + rand() * 0.5)) / 100) * 100));
+    if (code === "MKT") traders.push({ customerId: c.id, branchId: branch.id });
+    const term = code === "MKT" ? 28 : code === "AGR" ? pick([4, 6]) : code === "SAL" ? pick([6, 9, 12]) : pick([6, 12, 18]);
+    // Marketeers borrow in K500 steps, sized so the daily payment stays affordable.
+    const amount =
+      code === "MKT"
+        ? String(Math.min(5000, Math.max(500, Math.floor((income * 0.25) / 500) * 500)))
+        : String(Math.max(Number(p.minAmount), Math.round((Math.min(Number(p.maxAmount), income * 3) * (0.4 + rand() * 0.5)) / 100) * 100));
 
-    // Disbursed between ~8 months and 1 week ago; the last few stay in the pipeline.
-    const pipeline = i >= N - 8 ? (['submitted', 'submitted', 'rejected', 'approved', 'requested', 'submitted'] as const)[i - (N - 8)] : null;
-    const valueDate = pipeline ? today : addDays(today, -Math.floor(7 + rand() * 235));
+    // Disbursed between ~8 months and 1 week ago (28-day loans within the last two months); the last few stay in the pipeline.
+    const pipeline = i >= N - 8 ? (["submitted", "submitted", "rejected", "approved", "requested", "submitted"] as const)[i - (N - 8)] : null;
+    const valueDate = pipeline ? today : addDays(today, -Math.floor(code === "MKT" ? 2 + rand() * 34 : 7 + rand() * 235));
     const app = await applicationsSvc.create(
       maker,
       {
@@ -166,63 +338,72 @@ export async function seedDemo(app: INestApplicationContext) {
         monthlyIncome: String(income),
         monthlyExpenses: String(Math.round(income * (0.25 + rand() * 0.2))),
         existingDebtRepayments: String(rand() < 0.3 ? Math.round(income * 0.08) : 0),
-        guarantors: p.requiresGuarantor ? [{ fullName: `${pick(FIRST)} ${pick(LAST)}`, nrc: `${String(200000 + i * 1371)}/11/1`, phone: `0966${String(100000 + i * 911).padStart(6, '0')}`, relationship: 'Business partner' }] : [],
+        guarantors: p.requiresGuarantor
+          ? [
+              {
+                fullName: `${pick(FIRST)} ${pick(LAST)}`,
+                nrc: `${String(200000 + i * 1371)}/11/1`,
+                phone: `0966${String(100000 + i * 911).padStart(6, "0")}`,
+                relationship: "Business partner",
+              },
+            ]
+          : [],
       },
       undefined,
       new Date(`${addDays(valueDate, -2)}T09:00:00Z`),
     );
-    if (pipeline === 'submitted') continue;
-    if (pipeline === 'rejected') {
-      await applicationsSvc.decide(manager, app.id, 'reject', 'Debt service ratio too high after including informal borrowings disclosed at interview');
+    if (pipeline === "submitted") continue;
+    if (pipeline === "rejected") {
+      await applicationsSvc.decide(manager, app.id, "reject", "Debt service ratio too high after including informal borrowings disclosed at interview");
       continue;
     }
-    const decision = await applicationsSvc.decide(manager, app.id, 'approve', 'Meets affordability policy; employer and references confirmed');
+    const decision = await applicationsSvc.decide(manager, app.id, "approve", "Meets affordability policy; employer and references confirmed");
     const loanId = decision.loanId!;
-    if (pipeline === 'approved') continue;
+    if (pipeline === "approved") continue;
 
-    const channel: Channel = code === 'MKT' ? pick(['mtn_momo', 'airtel_money']) : code === 'SAL' ? 'bank' : pick(['bank', 'mtn_momo']);
+    const channel: Channel = code === "MKT" ? pick(["mtn_momo", "airtel_money"]) : code === "SAL" ? "bank" : pick(["bank", "mtn_momo"]);
     await loansSvc.requestDisbursement(maker, loanId, {
       channel,
-      destination: channel === 'bank' ? `Zanaco ****${String(1000 + i * 37).slice(-4)}` : c.phone,
+      destination: channel === "bank" ? `Zanaco ****${String(1000 + i * 37).slice(-4)}` : c.phone,
       valueDate,
     });
-    if (pipeline === 'requested') continue;
-    await loansSvc.decideDisbursement(accountant, loanId, 'authorise', 'Funds released');
+    if (pipeline === "requested") continue;
+    await loansSvc.decideDisbursement(accountant, loanId, "authorise", "Funds released");
     loanCount++;
 
-    const behaviour: Behaviour = pick(['good', 'good', 'good', 'good', 'late', 'late', 'stopped', 'early']);
+    const behaviour: Behaviour = pick(["good", "good", "good", "good", "late", "late", "stopped", "early"]);
     const schedule = await db
       .select()
       .from(loanScheduleItems)
       .where(and(eq(loanScheduleItems.tenantId, tenantId), eq(loanScheduleItems.loanId, loanId)))
       .orderBy(asc(loanScheduleItems.installmentNo));
-    const stopAfter = behaviour === 'stopped' ? Math.floor(rand() * 3) : Infinity;
+    const stopAfter = behaviour === "stopped" ? Math.floor(rand() * 3) : Infinity;
     let k = 0;
     for (const item of schedule) {
       if (item.dueDate >= today || k >= stopAfter) break;
       k++;
       const due = dec(item.principalDue).plus(dec(item.interestDue));
-      let paidOn = addDays(item.dueDate, behaviour === 'late' ? Math.floor(rand() * 20) : -Math.floor(rand() * 3));
+      let paidOn = addDays(item.dueDate, behaviour === "late" ? Math.floor(rand() * 20) : -Math.floor(rand() * 3));
       if (paidOn > today) paidOn = today;
-      if (behaviour === 'late' && rand() < 0.3) continue; // skipped instalment
-      const amount = behaviour === 'late' && rand() < 0.4 ? m(due.times(0.6)) : m(due);
+      if (behaviour === "late" && rand() < 0.3) continue; // skipped instalment
+      const amount = behaviour === "late" && rand() < 0.4 ? m(due.times(0.6)) : m(due);
       await paymentsSvc.record(cashier, {
         loanId,
         amount,
-        channel: channel === 'bank' ? 'bank' : channel,
+        channel: channel === "bank" ? "bank" : channel,
         externalRef: `TX${item.installmentNo}${loanId.slice(0, 6).toUpperCase()}`,
         idempotencyKey: `seed-${loanId}-${item.installmentNo}`,
         receivedAt: paidOn,
       });
     }
-    if (behaviour === 'early' && k > 0) {
+    if (behaviour === "early" && k > 0) {
       // Settles the rest early with a lump sum (any overpayment becomes a customer credit).
       const detail = await loansSvc.get(cashier, loanId);
       if (detail.settlement && dec(detail.settlement.total).gt(0)) {
         await paymentsSvc.record(cashier, {
           loanId,
           amount: detail.position.totalOutstanding,
-          channel: 'bank',
+          channel: "bank",
           externalRef: `SETTLE-${detail.loanNumber}`,
           idempotencyKey: `seed-settle-${loanId}`,
           receivedAt: today,
@@ -231,17 +412,39 @@ export async function seedDemo(app: INestApplicationContext) {
     }
   }
 
+  // Market groups: the marketeers at each branch meet and repay together.
+  const groupNames: Record<string, [string, string, string]> = {
+    [lsk.id]: ["Sinda Market Traders", "Sinda Main Market", "Daily"],
+    [ktw.id]: ["Katete Market Women", "Katete Market", "Tuesday"],
+    [ndl.id]: ["Petauke Station Traders", "Petauke Bus Station", "Thursday"],
+  };
+  for (const [branchId, [name, meetingPlace, meetingDay]] of Object.entries(groupNames)) {
+    const [g] = await db
+      .insert(loanGroups)
+      .values({ tenantId, branchId, name, meetingPlace, meetingDay, officerId: branchId === lsk.id ? ids.officer : ids.officer2, createdBy: ids.admin })
+      .returning();
+    const members = traders.filter((t) => t.branchId === branchId).map((t) => t.customerId);
+    if (members.length) await db.update(customers).set({ groupId: g.id }).where(inArray(customers.id, members));
+  }
+
   // A reversal awaiting approval: a cashier keyed a receipt against the wrong loan.
-  const recent = await paymentsSvc.list(cashier, { status: 'posted', pageSize: '1' });
-  if (recent.items[0]) await paymentsSvc.requestReversal(cashier, recent.items[0].id, 'Receipt captured against the wrong loan account');
+  const recent = await paymentsSvc.list(cashier, { status: "posted", pageSize: "1" });
+  if (recent.items[0]) await paymentsSvc.requestReversal(cashier, recent.items[0].id, "Receipt captured against the wrong loan account");
 
   // Borrower portal account for the first customer.
   const [firstCustomer] = await db.select().from(customers).where(eq(customers.tenantId, tenantId)).orderBy(asc(customers.createdAt)).limit(1);
   const [borrower] = await db
     .insert(users)
-    .values({ tenantId, email: 'borrower@demo.zm', passwordHash, fullName: `${firstCustomer.firstName} ${firstCustomer.lastName}`, role: 'borrower', customerId: firstCustomer.id })
+    .values({
+      tenantId,
+      email: "borrower@demo.zm",
+      passwordHash,
+      fullName: `${firstCustomer.firstName} ${firstCustomer.lastName}`,
+      role: "borrower",
+      customerId: firstCustomer.id,
+    })
     .returning({ id: users.id });
-  await audit.record(db, { tenantId, userId: null, action: 'seed.completed', entityType: 'tenant', entityId: tenantId, data: { borrowerUserId: borrower.id } });
+  await audit.record(db, { tenantId, userId: null, action: "seed.completed", entityType: "tenant", entityId: tenantId, data: { borrowerUserId: borrower.id } });
 
   log.log(`Seeded ${N} customers and ${loanCount} disbursed loans for ${tenant.name}`);
 }

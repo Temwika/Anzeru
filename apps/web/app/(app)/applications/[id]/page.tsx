@@ -1,14 +1,28 @@
 "use client";
 
-import { LABELS } from "@anzelu/contracts";
+import { LABELS, rateText } from "@anzelu/contracts";
 import { useQueryClient } from "@tanstack/react-query";
 import { CircleCheck, CircleX, Info } from "lucide-react";
-import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useState } from "react";
 import { JourneyCard, NextStep } from "@/components/journey";
 import { useToast } from "@/components/toast";
-import { Badge, Button, ButtonLink, Card, CardHeader, Detail, ErrorState, Field, inputClass, Modal, Notice, PageHeader, Skeleton, StatusBadge } from "@/components/ui";
+import {
+  Badge,
+  Button,
+  ButtonLink,
+  Card,
+  CardHeader,
+  Detail,
+  ErrorState,
+  Field,
+  inputClass,
+  Modal,
+  Notice,
+  PageHeader,
+  Skeleton,
+  StatusBadge,
+} from "@/components/ui";
 import { api, useApi, useSession } from "@/lib/api";
 import { dateTime, kwacha, pct } from "@/lib/format";
 
@@ -28,7 +42,13 @@ interface Application {
   officerName: string;
   canDecide: boolean;
   customer: { id: string; firstName: string; lastName: string; customerNumber: string; kycStatus: string; employer: string | null };
-  product: { name: string; interestMethod: keyof typeof LABELS.interestMethod; annualRatePct: string; repaymentFrequency: keyof typeof LABELS.frequency; maxDtiPct: string };
+  product: {
+    name: string;
+    interestMethod: keyof typeof LABELS.interestMethod;
+    annualRatePct: string;
+    repaymentFrequency: keyof typeof LABELS.frequency;
+    maxDtiPct: string;
+  };
   guarantors: { id: string; fullName: string; nrc: string; phone: string; relationship: string }[];
   decisions: { id: string; decision: string; reason: string; decidedAt: string; decidedBy: string }[];
   loan: { id: string; loanNumber: string; status: string } | null;
@@ -96,8 +116,8 @@ export default function ApplicationPage() {
         title={`${a.customer.firstName} ${a.customer.lastName} · ${kwacha(a.amount)}`}
         description={
           <span className="flex flex-wrap items-center gap-2">
-            {a.applicationNumber} · {a.product.name} · {a.channel === "self_service" ? "applied online by the borrower" : `submitted by ${a.officerName}`} on {dateTime(a.submittedAt)}{" "}
-            <StatusBadge status={a.status} />
+            {a.applicationNumber} · {a.product.name} · {a.channel === "self_service" ? "applied online by the borrower" : `submitted by ${a.officerName}`} on{" "}
+            {dateTime(a.submittedAt)} <StatusBadge status={a.status} />
             {a.channel === "self_service" && <Badge tone="violet">Online</Badge>}
           </span>
         }
@@ -119,13 +139,26 @@ export default function ApplicationPage() {
             }
           />
         )}
-        {a.status === "submitted" && !a.canDecide && <NextStep title={blocked ?? "Waiting for a credit approver"} body={blocked ? undefined : "A credit manager reviews the scorecard and decides. You will see the outcome here."} />}
+        {a.status === "submitted" && !a.canDecide && (
+          <NextStep
+            title={blocked ?? "Waiting for a credit approver"}
+            body={blocked ? undefined : "A credit manager reviews the scorecard and decides. You will see the outcome here."}
+          />
+        )}
         {a.loan && (
           <NextStep
             tone="done"
             title={`Approved and booked as ${a.loan.loanNumber}`}
-            body={a.loan.status === "pending_disbursement" ? "Next, a credit officer requests the payout and a separate authoriser releases the money." : "This loan has been paid out and is now being serviced."}
-            action={<ButtonLink href={`/loans/${a.loan.id}`} variant="secondary">Open loan</ButtonLink>}
+            body={
+              a.loan.status === "pending_disbursement"
+                ? "Next, a credit officer requests the payout and a separate authoriser releases the money."
+                : "This loan has been paid out and is now being serviced."
+            }
+            action={
+              <ButtonLink href={`/loans/${a.loan.id}`} variant="secondary">
+                Open loan
+              </ButtonLink>
+            }
           />
         )}
         {a.status === "rejected" && <NextStep tone="done" title="Application declined" body={a.decisions[0]?.reason} />}
@@ -141,7 +174,7 @@ export default function ApplicationPage() {
             </Detail>
             <Detail label="Product">{a.product.name}</Detail>
             <Detail label="Pricing">
-              {Number(a.product.annualRatePct)}% p.a. {LABELS.interestMethod[a.product.interestMethod].toLowerCase()}
+              {rateText(a.product.interestMethod, a.product.annualRatePct)} {LABELS.interestMethod[a.product.interestMethod].toLowerCase()}
             </Detail>
             <Detail label="Instalment">{kwacha(s.installmentAmount)}</Detail>
             <Detail label="Total repayable">{kwacha(s.totalRepayable)}</Detail>
@@ -194,7 +227,13 @@ export default function ApplicationPage() {
           <ul className="divide-y divide-slate-100">
             {s.checks.map((c) => (
               <li key={c.name} className="flex items-start gap-3 px-5 py-3">
-                {c.passed ? <CircleCheck className="mt-0.5 size-4 text-emerald-600" /> : c.hard ? <CircleX className="mt-0.5 size-4 text-rose-600" /> : <Info className="mt-0.5 size-4 text-amber-600" />}
+                {c.passed ? (
+                  <CircleCheck className="mt-0.5 size-4 text-emerald-600" />
+                ) : c.hard ? (
+                  <CircleX className="mt-0.5 size-4 text-rose-600" />
+                ) : (
+                  <Info className="mt-0.5 size-4 text-amber-600" />
+                )}
                 <div className="flex-1">
                   <p className="text-sm font-medium text-slate-800">
                     {c.name} {c.hard && <span className="text-xs font-normal text-slate-400">· hard check</span>}
@@ -243,7 +282,11 @@ export default function ApplicationPage() {
         open={!!decision}
         onClose={() => setDecision(null)}
         title={decision === "approve" ? `Approve ${kwacha(a.amount)}` : "Reject application"}
-        description={decision === "approve" ? "A loan account is created and sent for disbursement authorisation." : "The reason is recorded and can be shared with the customer."}
+        description={
+          decision === "approve"
+            ? "A loan account is created and sent for disbursement authorisation."
+            : "The reason is recorded and can be shared with the customer."
+        }
       >
         <Field label="Reason for the record">
           <textarea className={inputClass} rows={3} value={reason} onChange={(e) => setReason(e.target.value)} />

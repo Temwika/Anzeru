@@ -5,30 +5,31 @@
   --font-display: var(--font-jakarta), var(--font-inter), ui-sans-serif, system-ui, sans-serif;
   --font-mono: var(--font-jetbrains), ui-monospace, monospace;
 
-  /* Brand: deep emerald, the colour of trust and growth. */
-  --color-brand-50: #ecfdf7;
-  --color-brand-100: #d1faec;
-  --color-brand-200: #a7f3da;
-  --color-brand-300: #6ee7c2;
-  --color-brand-400: #34d3a4;
-  --color-brand-500: #10b98a;
-  --color-brand-600: #059673;
-  --color-brand-700: #04785f;
-  --color-brand-800: #065f4c;
-  --color-brand-900: #064e40;
-  --color-brand-950: #022c25;
+  /* Brand: Chilimbitso orange, from the logo. 600 carries white text at 4.5:1 for buttons. */
+  --color-brand-50: #fff4ec;
+  --color-brand-100: #ffe6d3;
+  --color-brand-200: #fec9a5;
+  --color-brand-300: #fda56d;
+  --color-brand-400: #f98540;
+  --color-brand-500: #f26b1d;
+  --color-brand-600: #c94f0c;
+  --color-brand-700: #a43f0c;
+  --color-brand-800: #833411;
+  --color-brand-900: #6b2c11;
+  --color-brand-950: #3a1406;
 
-  /* Copper accent: a nod to Zambia's copper, used sparingly for emphasis. */
-  --color-copper-50: #fdf6ef;
-  --color-copper-100: #fae8d6;
-  --color-copper-400: #e0904f;
-  --color-copper-500: #c8702e;
-  --color-copper-600: #a95a22;
+  /* Gold accent for highlights such as top-up offers. */
+  --color-copper-50: #fffaeb;
+  --color-copper-100: #fef0c7;
+  --color-copper-400: #f4b740;
+  --color-copper-500: #dc9512;
+  --color-copper-600: #b4760b;
 
-  --color-ink-950: #07101f;
-  --color-ink-900: #0d1729;
-  --color-ink-800: #17233a;
-  --color-ink-700: #24324d;
+  /* Espresso: the logo lettering, used for dark surfaces. */
+  --color-ink-950: #1c100b;
+  --color-ink-900: #261711;
+  --color-ink-800: #352219;
+  --color-ink-700: #4a3024;
 
   --shadow-card: 0 1px 2px rgb(15 23 42 / 0.04), 0 1px 3px rgb(15 23 42 / 0.03);
   --shadow-lift: 0 12px 32px -12px rgb(15 23 42 / 0.18), 0 2px 6px rgb(15 23 42 / 0.05);
@@ -63,7 +64,7 @@
 }
 
 :root {
-  --background: #f5f7fa;
+  --background: #f7f5f3;
   --foreground: #0f172a;
 }
 

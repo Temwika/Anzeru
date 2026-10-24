@@ -1,10 +1,10 @@
 "use client";
 
 import { LABELS, type Channel } from "@anzelu/contracts";
-import { Receipt } from "lucide-react";
+import { Printer, Receipt } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
-import { Badge, Card, EmptyState, ErrorState, Modal, PageHeader, Pager, Skeleton, StatusBadge, Table, Tabs, Td, Th } from "@/components/ui";
+import { Badge, ButtonLink, Card, EmptyState, ErrorState, Modal, PageHeader, Pager, Skeleton, StatusBadge, Table, Tabs, Td, Th } from "@/components/ui";
 import { qs, useApi, usePage } from "@/lib/api";
 import { dateTime, kwacha, label, shortDate } from "@/lib/format";
 
@@ -176,6 +176,9 @@ function ReceiptModal({ id, onClose }: { id: string; onClose: () => void }) {
               Reversal {v.status} ({dateTime(v.requestedAt)}): {v.reason}
             </p>
           ))}
+          <ButtonLink href={`/receipts/${id}`} className="w-full">
+            <Printer className="size-4" /> Print receipt
+          </ButtonLink>
         </div>
       )}
     </Modal>

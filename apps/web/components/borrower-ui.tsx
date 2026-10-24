@@ -1,6 +1,6 @@
 "use client";
 
-import { LABELS, type Frequency, type InterestMethod } from "@anzelu/contracts";
+import { LABELS, type Frequency, type InterestMethod, rateText } from "@anzelu/contracts";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { CircleAlert, CircleCheck, Smartphone } from "lucide-react";
 import { useEffect, useState } from "react";
@@ -432,7 +432,7 @@ export function ProductCard({ product, selected, onSelect, dark }: { product: Bo
       </p>
       <p className={cn("mt-1 text-xs", dark ? "text-slate-400" : "text-slate-500")}>
         {periods(product.minTerm, product.repaymentFrequency)} to {periods(product.maxTerm, product.repaymentFrequency)} ·{" "}
-        {LABELS.frequency[product.repaymentFrequency].toLowerCase()} repayments · {Number(product.annualRatePct)}% a year
+        {LABELS.frequency[product.repaymentFrequency].toLowerCase()} repayments · {rateText(product.interestMethod, product.annualRatePct, true)}
       </p>
     </>
   );

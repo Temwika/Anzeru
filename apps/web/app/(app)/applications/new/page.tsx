@@ -1,6 +1,6 @@
 "use client";
 
-import { applicationCreateSchema, LABELS } from "@anzelu/contracts";
+import { applicationCreateSchema, LABELS, rateText } from "@anzelu/contracts";
 import type { Schedule } from "@anzelu/finance";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { ArrowLeft, ArrowRight, Check, Search, Send, ShieldAlert, ShieldCheck, Trash2, UserPlus, UserRound } from "lucide-react";
@@ -77,7 +77,15 @@ export default function NewApplicationPage() {
     mode: "onTouched",
   });
   const guarantors = useFieldArray({ control, name: "guarantors" });
-  const [customerId, productId, amount, term, income, expenses, debt] = watch(["customerId", "productId", "amount", "term", "monthlyIncome", "monthlyExpenses", "existingDebtRepayments"]);
+  const [customerId, productId, amount, term, income, expenses, debt] = watch([
+    "customerId",
+    "productId",
+    "amount",
+    "term",
+    "monthlyIncome",
+    "monthlyExpenses",
+    "existingDebtRepayments",
+  ]);
   const product = products?.find((p) => p.id === productId);
   const { data: customer } = useApi<CustomerHit & { monthlyIncome: string; branchName: string }>(customerId ? `/customers/${customerId}` : null);
 
@@ -138,11 +146,20 @@ export default function NewApplicationPage() {
   });
 
   const f = (name: keyof Values) => ({ ...register(name), "aria-invalid": !!errors[name], className: inputClass });
-  const steps: Step[] = STEPS.map((s, i) => ({ label: s.label, description: s.description, state: i < step ? "complete" : i === step ? "current" : "upcoming" }));
+  const steps: Step[] = STEPS.map((s, i) => ({
+    label: s.label,
+    description: s.description,
+    state: i < step ? "complete" : i === step ? "current" : "upcoming",
+  }));
 
   return (
     <>
-      <PageHeader back={{ href: "/applications", label: "Applications" }} eyebrow="Origination" title="New loan application" description="Four quick steps. The server re-checks affordability and scores the application on submit." />
+      <PageHeader
+        back={{ href: "/applications", label: "Applications" }}
+        eyebrow="Origination"
+        title="New loan application"
+        description="Four quick steps. The server re-checks affordability and scores the application on submit."
+      />
 
       <form onSubmit={onSubmit} noValidate className="grid gap-6 lg:grid-cols-[1fr_340px]">
         <Card className="overflow-hidden">
@@ -180,7 +197,9 @@ export default function NewApplicationPage() {
                             onClick={() => setValue("productId", p.id, { shouldValidate: true })}
                             className={cn(
                               "relative rounded-2xl border p-4 text-left transition",
-                              on ? "border-brand-500 bg-brand-50/60 shadow-[0_0_0_3px_var(--color-brand-100)]" : "border-slate-200 hover:border-slate-300 hover:bg-slate-50",
+                              on
+                                ? "border-brand-500 bg-brand-50/60 shadow-[0_0_0_3px_var(--color-brand-100)]"
+                                : "border-slate-200 hover:border-slate-300 hover:bg-slate-50",
                             )}
                           >
                             {on && (
@@ -190,7 +209,7 @@ export default function NewApplicationPage() {
                             )}
                             <p className="pr-6 font-semibold text-slate-900">{p.name}</p>
                             <p className="tabular mt-1 text-sm text-slate-600">
-                              {Number(p.annualRatePct)}% p.a. · {LABELS.frequency[p.repaymentFrequency]}
+                              {rateText(p.interestMethod, p.annualRatePct)} · {LABELS.frequency[p.repaymentFrequency]}
                             </p>
                             <p className="tabular mt-2 text-xs text-slate-500">
                               {kwacha(p.minAmount, { compact: true })}–{kwacha(p.maxAmount, { compact: true })} · {p.minTerm}–{p.maxTerm} instalments
@@ -204,7 +223,12 @@ export default function NewApplicationPage() {
                   {errors.productId && <p className="mt-2 text-xs font-medium text-rose-600">Choose a product</p>}
                 </div>
                 <div className="grid gap-5 sm:grid-cols-2">
-                  <Field label="Amount (ZMW)" required error={errors.amount?.message} hint={product ? `Between ${kwacha(product.minAmount)} and ${kwacha(product.maxAmount)}` : undefined}>
+                  <Field
+                    label="Amount (ZMW)"
+                    required
+                    error={errors.amount?.message}
+                    hint={product ? `Between ${kwacha(product.minAmount)} and ${kwacha(product.maxAmount)}` : undefined}
+                  >
                     <input {...f("amount")} inputMode="decimal" placeholder="0.00" />
                   </Field>
                   <Field
@@ -215,7 +239,13 @@ export default function NewApplicationPage() {
                   >
                     <input {...f("term")} inputMode="numeric" />
                   </Field>
-                  <Field label="Purpose" required error={errors.purpose?.message} className="sm:col-span-2" hint="Be specific: it helps the approver and is kept on record">
+                  <Field
+                    label="Purpose"
+                    required
+                    error={errors.purpose?.message}
+                    className="sm:col-span-2"
+                    hint="Be specific: it helps the approver and is kept on record"
+                  >
                     <input {...f("purpose")} placeholder="e.g. Restock shop inventory before the festive season" />
                   </Field>
                 </div>
@@ -226,7 +256,12 @@ export default function NewApplicationPage() {
               <div className="space-y-6">
                 <Notice tone="info">Use verified monthly figures from the latest payslip or three months of bank or mobile-money statements.</Notice>
                 <div className="grid gap-5 sm:grid-cols-3">
-                  <Field label="Net monthly income" required error={errors.monthlyIncome?.message} hint={customer ? "Pre-filled from the customer profile" : undefined}>
+                  <Field
+                    label="Net monthly income"
+                    required
+                    error={errors.monthlyIncome?.message}
+                    hint={customer ? "Pre-filled from the customer profile" : undefined}
+                  >
                     <input {...f("monthlyIncome")} inputMode="decimal" />
                   </Field>
                   <Field label="Living expenses" required error={errors.monthlyExpenses?.message}>
@@ -243,12 +278,21 @@ export default function NewApplicationPage() {
                         {dti <= dtiLimit ? <ShieldCheck className="size-4 text-emerald-600" /> : <ShieldAlert className="size-4 text-rose-600" />}
                         Debt-to-income {pct(dti)}
                       </p>
-                      <span className={cn("rounded-full px-2 py-0.5 text-xs font-medium", dti <= dtiLimit ? "bg-emerald-50 text-emerald-700" : "bg-rose-50 text-rose-700")}>
+                      <span
+                        className={cn(
+                          "rounded-full px-2 py-0.5 text-xs font-medium",
+                          dti <= dtiLimit ? "bg-emerald-50 text-emerald-700" : "bg-rose-50 text-rose-700",
+                        )}
+                      >
                         {dti <= dtiLimit ? "Within" : "Above"} {dtiLimit}% policy
                       </span>
                     </div>
                     <div className="mt-3">
-                      <ProgressBar value={(dti / Math.max(dtiLimit * 1.5, 1)) * 100} tone={dti <= dtiLimit * 0.85 ? "brand" : dti <= dtiLimit ? "amber" : "rose"} label="Debt-to-income" />
+                      <ProgressBar
+                        value={(dti / Math.max(dtiLimit * 1.5, 1)) * 100}
+                        tone={dti <= dtiLimit * 0.85 ? "brand" : dti <= dtiLimit ? "amber" : "rose"}
+                        label="Debt-to-income"
+                      />
                     </div>
                     <p className="tabular mt-3 text-sm text-slate-600">
                       New instalment ≈ <strong>{kwacha(monthlyInstalment)}</strong> a month. After expenses and all repayments the customer keeps{" "}
@@ -264,7 +308,9 @@ export default function NewApplicationPage() {
                 <div className="flex items-center justify-between gap-3">
                   <div>
                     <p className="text-sm font-semibold text-slate-900">Guarantors</p>
-                    <p className="text-xs text-slate-500">{product?.requiresGuarantor ? "This product requires at least one guarantor." : "Optional for this product, up to three."}</p>
+                    <p className="text-xs text-slate-500">
+                      {product?.requiresGuarantor ? "This product requires at least one guarantor." : "Optional for this product, up to three."}
+                    </p>
                   </div>
                   {guarantors.fields.length < 3 && (
                     <Button size="sm" variant="soft" onClick={() => guarantors.append({ fullName: "", nrc: "", phone: "", relationship: "" })}>
@@ -273,7 +319,12 @@ export default function NewApplicationPage() {
                   )}
                 </div>
                 {guarantors.fields.length === 0 && (
-                  <div className={cn("rounded-2xl border border-dashed p-6 text-center text-sm", product?.requiresGuarantor ? "border-amber-300 bg-amber-50/50 text-amber-800" : "border-slate-200 text-slate-500")}>
+                  <div
+                    className={cn(
+                      "rounded-2xl border border-dashed p-6 text-center text-sm",
+                      product?.requiresGuarantor ? "border-amber-300 bg-amber-50/50 text-amber-800" : "border-slate-200 text-slate-500",
+                    )}
+                  >
                     {product?.requiresGuarantor ? "Add a guarantor before submitting." : "No guarantors added."}
                   </div>
                 )}
@@ -281,7 +332,12 @@ export default function NewApplicationPage() {
                   <div key={g.id} className="rounded-2xl border border-slate-200 p-4">
                     <div className="mb-3 flex items-center justify-between">
                       <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Guarantor {i + 1}</p>
-                      <button type="button" onClick={() => guarantors.remove(i)} className="rounded-lg p-1.5 text-slate-400 hover:bg-rose-50 hover:text-rose-600" aria-label="Remove guarantor">
+                      <button
+                        type="button"
+                        onClick={() => guarantors.remove(i)}
+                        className="rounded-lg p-1.5 text-slate-400 hover:bg-rose-50 hover:text-rose-600"
+                        aria-label="Remove guarantor"
+                      >
                         <Trash2 className="size-4" />
                       </button>
                     </div>
@@ -372,7 +428,9 @@ export default function NewApplicationPage() {
               <StatusBadge status={customer.kycStatus} />
             </Card>
           )}
-          <p className="px-1 text-xs leading-relaxed text-slate-500">The final schedule is fixed on the disbursement date. Figures here use the same engine that books the loan.</p>
+          <p className="px-1 text-xs leading-relaxed text-slate-500">
+            The final schedule is fixed on the disbursement date. Figures here use the same engine that books the loan.
+          </p>
         </aside>
       </form>
     </>
@@ -400,7 +458,9 @@ function CustomerPicker({ selectedId, onSelect }: { selectedId?: string; onSelec
                 onClick={() => onSelect(c.id)}
                 className={cn(
                   "flex w-full items-center gap-3 rounded-2xl border p-3 text-left transition",
-                  on ? "border-brand-500 bg-brand-50/60 shadow-[0_0_0_3px_var(--color-brand-100)]" : "border-slate-200 hover:border-slate-300 hover:bg-slate-50",
+                  on
+                    ? "border-brand-500 bg-brand-50/60 shadow-[0_0_0_3px_var(--color-brand-100)]"
+                    : "border-slate-200 hover:border-slate-300 hover:bg-slate-50",
                 )}
               >
                 <Avatar name={`${c.firstName} ${c.lastName}`} />

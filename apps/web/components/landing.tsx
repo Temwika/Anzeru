@@ -1,5 +1,6 @@
 "use client";
 
+import { LABELS, rateText } from "@anzelu/contracts";
 import { ArrowRight, Info } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState } from "react";
@@ -211,9 +212,10 @@ export function ProductCalculator() {
           {quote && (
             <p className="mt-4 flex items-start gap-2 text-[11px] leading-relaxed text-slate-400">
               <Info className="mt-0.5 size-3.5 shrink-0" />
-              Representative example: {kwacha(amount)} over {periods(term, product.repaymentFrequency)} at {Number(product.annualRatePct)}% a year (
-              {product.interestMethod.replace("_", " ")}) with a {Number(product.processingFeePct)}% processing fee: {kwacha(quote.totals.repayable)} repayable
-              in total, APR {pct(quote.disclosure.aprPct)}. Subject to approval and affordability.
+              Representative example: {kwacha(amount)} over {periods(term, product.repaymentFrequency)} at{" "}
+              {rateText(product.interestMethod, product.annualRatePct, true)} ({LABELS.interestMethod[product.interestMethod].toLowerCase()}) with a{" "}
+              {Number(product.processingFeePct)}% processing fee: {kwacha(quote.totals.repayable)} repayable in total, APR {pct(quote.disclosure.aprPct)}.
+              Subject to approval and affordability.
             </p>
           )}
         </div>
@@ -239,13 +241,13 @@ export function PhoneMock({ className }: { className?: string }) {
           <p className="-mt-2 px-1 font-display text-base font-bold text-slate-900">Chanda</p>
           <div className="rounded-2xl bg-ink-950 p-3.5 text-white">
             <div className="flex items-center justify-between text-[9px] text-slate-400">
-              <span>Salary Advance</span>
+              <span>Marketeers Loan</span>
               <span className="rounded-full bg-brand-500/20 px-1.5 py-0.5 text-brand-200">On track</span>
             </div>
             <div className="mt-2 flex items-center justify-between">
               <div>
                 <p className="text-[8px] uppercase text-slate-400">Balance</p>
-                <p className="font-display text-lg font-bold">K8,450.00</p>
+                <p className="font-display text-lg font-bold">K1,100.00</p>
               </div>
               <svg viewBox="0 0 100 100" className="size-12 -rotate-90">
                 <circle cx="50" cy="50" r="40" fill="none" strokeWidth="10" className="stroke-white/10" />
@@ -257,12 +259,12 @@ export function PhoneMock({ className }: { className?: string }) {
                   strokeWidth="10"
                   strokeLinecap="round"
                   strokeDasharray="251"
-                  strokeDashoffset="100"
+                  strokeDashoffset="99"
                   className="stroke-brand-400"
                 />
               </svg>
             </div>
-            <p className="mt-2 rounded-lg bg-white/[0.06] px-2 py-1.5 text-[9px] text-slate-300">Next payment K1,410.00 due 08 Nov</p>
+            <p className="mt-2 rounded-lg bg-white/[0.06] px-2 py-1.5 text-[9px] text-slate-300">Today K100.00 · day 18 of 28</p>
             <div className="mt-2.5 grid grid-cols-[1fr_auto] gap-1.5">
               <span className="rounded-lg bg-brand-500 py-1.5 text-center text-[10px] font-semibold text-ink-950">Pay now</span>
               <span className="px-2 py-1.5 text-[10px] text-slate-300">Pay off</span>
@@ -270,7 +272,7 @@ export function PhoneMock({ className }: { className?: string }) {
           </div>
           <div className="flex items-center gap-2 rounded-xl border border-copper-100 bg-copper-50 p-2.5">
             <span className="size-6 rounded-lg bg-copper-500" />
-            <span className="text-[9px] font-semibold text-slate-800">You’ve unlocked a top-up</span>
+            <span className="text-[9px] font-semibold text-slate-800">Sinda Market Traders · all paid today</span>
           </div>
           <div className="grid grid-cols-2 gap-1.5">
             <span className="h-12 rounded-xl border border-slate-200 bg-white" />

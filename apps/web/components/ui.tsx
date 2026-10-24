@@ -9,8 +9,7 @@ import { cn } from "@/lib/cn";
 
 type ButtonVariant = "primary" | "secondary" | "ghost" | "danger" | "soft" | "dark";
 const buttonStyles: Record<ButtonVariant, string> = {
-  primary:
-    "bg-brand-600 text-white shadow-[0_1px_0_rgb(255_255_255/0.15)_inset,0_1px_2px_rgb(4_120_95/0.4)] hover:bg-brand-700 active:bg-brand-800",
+  primary: "bg-brand-600 text-white shadow-[0_1px_0_rgb(255_255_255/0.15)_inset,0_1px_2px_rgb(4_120_95/0.4)] hover:bg-brand-700 active:bg-brand-800",
   secondary: "border border-slate-200 bg-white text-slate-700 shadow-card hover:border-slate-300 hover:bg-slate-50 active:bg-slate-100",
   ghost: "text-slate-600 hover:bg-slate-100 hover:text-slate-900",
   danger: "bg-rose-600 text-white shadow-sm hover:bg-rose-700 active:bg-rose-800",
@@ -54,15 +53,26 @@ export function ButtonLink({
   size = "md",
   className,
   children,
+  ...rest
 }: {
   href: string;
+  "aria-label"?: string;
   variant?: ButtonVariant;
   size?: keyof typeof buttonSizes;
   className?: string;
   children: React.ReactNode;
 }) {
   return (
-    <Link href={href} className={cn("inline-flex items-center justify-center gap-2 whitespace-nowrap font-medium transition duration-150", buttonSizes[size], buttonStyles[variant], className)}>
+    <Link
+      href={href}
+      {...rest}
+      className={cn(
+        "inline-flex items-center justify-center gap-2 whitespace-nowrap font-medium transition duration-150",
+        buttonSizes[size],
+        buttonStyles[variant],
+        className,
+      )}
+    >
       {children}
     </Link>
   );
@@ -78,7 +88,17 @@ export function Card({ className, children, ...props }: React.HTMLAttributes<HTM
   );
 }
 
-export function CardHeader({ title, description, action, icon: Icon }: { title: React.ReactNode; description?: React.ReactNode; action?: React.ReactNode; icon?: React.ElementType }) {
+export function CardHeader({
+  title,
+  description,
+  action,
+  icon: Icon,
+}: {
+  title: React.ReactNode;
+  description?: React.ReactNode;
+  action?: React.ReactNode;
+  icon?: React.ElementType;
+}) {
   return (
     <div className="flex items-start justify-between gap-4 border-b border-slate-100 px-5 py-4">
       <div className="flex min-w-0 items-start gap-3">
@@ -153,7 +173,13 @@ const dots: Record<Tone, string> = {
 
 export function Badge({ tone = "neutral", children, className, dot }: { tone?: Tone; children: React.ReactNode; className?: string; dot?: boolean }) {
   return (
-    <span className={cn("inline-flex items-center gap-1.5 whitespace-nowrap rounded-full px-2 py-0.5 text-xs font-medium ring-1 ring-inset", tones[tone], className)}>
+    <span
+      className={cn(
+        "inline-flex items-center gap-1.5 whitespace-nowrap rounded-full px-2 py-0.5 text-xs font-medium ring-1 ring-inset",
+        tones[tone],
+        className,
+      )}
+    >
       {dot && <span className={cn("size-1.5 rounded-full", dots[tone])} />}
       {children}
     </span>
@@ -275,9 +301,9 @@ export function Field({
   );
 }
 
-export function SearchInput({ value, onChange, placeholder }: { value: string; onChange: (v: string) => void; placeholder: string }) {
+export function SearchInput({ value, onChange, placeholder, wide }: { value: string; onChange: (v: string) => void; placeholder: string; wide?: boolean }) {
   return (
-    <div className="relative w-full sm:max-w-xs">
+    <div className={cn("relative w-full", !wide && "sm:max-w-xs")}>
       <Search className="pointer-events-none absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-slate-400" />
       <input type="search" value={value} onChange={(e) => onChange(e.target.value)} placeholder={placeholder} className={cn(inputClass, "pl-10")} />
     </div>
@@ -295,7 +321,11 @@ export function Table({ children, className }: { children: React.ReactNode; clas
 }
 
 export function Th({ children, className }: { children?: React.ReactNode; className?: string }) {
-  return <th className={cn("whitespace-nowrap bg-slate-50/70 px-5 py-2.5 text-left text-[11px] font-semibold uppercase tracking-wider text-slate-500", className)}>{children}</th>;
+  return (
+    <th className={cn("whitespace-nowrap bg-slate-50/70 px-5 py-2.5 text-left text-[11px] font-semibold uppercase tracking-wider text-slate-500", className)}>
+      {children}
+    </th>
+  );
 }
 
 export function Td({ children, className, ...rest }: React.TdHTMLAttributes<HTMLTableCellElement>) {
@@ -344,7 +374,9 @@ export function Tabs<T extends string>({ tabs, value, onChange }: { tabs: { valu
           >
             {t.label}
             {t.count !== undefined && (
-              <span className={cn("tabular rounded-full px-1.5 text-[11px]", on ? "bg-brand-50 text-brand-700" : "bg-slate-200/80 text-slate-500")}>{t.count}</span>
+              <span className={cn("tabular rounded-full px-1.5 text-[11px]", on ? "bg-brand-50 text-brand-700" : "bg-slate-200/80 text-slate-500")}>
+                {t.count}
+              </span>
             )}
           </button>
         );
@@ -428,7 +460,14 @@ export function Notice({ tone = "info", children }: { tone?: "info" | "warn" | "
 
 /* ───────────────────────────── Journey & identity ───────────────────────────── */
 
-const AVATAR_COLOURS = ["bg-brand-100 text-brand-800", "bg-sky-100 text-sky-800", "bg-violet-100 text-violet-800", "bg-amber-100 text-amber-800", "bg-rose-100 text-rose-800", "bg-copper-100 text-copper-600"];
+const AVATAR_COLOURS = [
+  "bg-brand-100 text-brand-800",
+  "bg-sky-100 text-sky-800",
+  "bg-violet-100 text-violet-800",
+  "bg-amber-100 text-amber-800",
+  "bg-rose-100 text-rose-800",
+  "bg-copper-100 text-copper-600",
+];
 
 export function Avatar({ name, size = "md", className }: { name: string; size?: "sm" | "md" | "lg"; className?: string }) {
   const initials = name
@@ -471,7 +510,12 @@ export function Stepper({ steps, className }: { steps: Step[]; className?: strin
           >
             {s.state === "complete" ? <Check className="size-4" /> : s.state === "failed" ? <X className="size-4" /> : i + 1}
           </span>
-          <span className={cn("mt-2 px-1 text-xs font-semibold", s.state === "upcoming" ? "text-slate-400" : s.state === "failed" ? "text-rose-700" : "text-slate-900")}>
+          <span
+            className={cn(
+              "mt-2 px-1 text-xs font-semibold",
+              s.state === "upcoming" ? "text-slate-400" : s.state === "failed" ? "text-rose-700" : "text-slate-900",
+            )}
+          >
             {s.label}
           </span>
           {s.description && <span className="mt-0.5 hidden px-1 text-[11px] leading-snug text-slate-500 sm:block">{s.description}</span>}
@@ -539,12 +583,23 @@ export function StatCard({
 export function ProgressBar({ value, tone = "brand", label }: { value: number; tone?: "brand" | "amber" | "rose"; label?: string }) {
   const bar = { brand: "bg-brand-500", amber: "bg-amber-500", rose: "bg-rose-500" }[tone];
   return (
-    <div className="h-1.5 w-full overflow-hidden rounded-full bg-slate-100" role="progressbar" aria-valuenow={Math.round(value)} aria-valuemin={0} aria-valuemax={100} aria-label={label}>
+    <div
+      className="h-1.5 w-full overflow-hidden rounded-full bg-slate-100"
+      role="progressbar"
+      aria-valuenow={Math.round(value)}
+      aria-valuemin={0}
+      aria-valuemax={100}
+      aria-label={label}
+    >
       <div className={cn("h-full rounded-full transition-all duration-700", bar)} style={{ width: `${Math.max(0, Math.min(100, value))}%` }} />
     </div>
   );
 }
 
 export function Kbd({ children }: { children: React.ReactNode }) {
-  return <kbd className="rounded-md border border-slate-200 bg-white px-1.5 py-0.5 font-sans text-[11px] font-medium text-slate-500 shadow-[0_1px_0_rgb(15_23_42/0.06)]">{children}</kbd>;
+  return (
+    <kbd className="rounded-md border border-slate-200 bg-white px-1.5 py-0.5 font-sans text-[11px] font-medium text-slate-500 shadow-[0_1px_0_rgb(15_23_42/0.06)]">
+      {children}
+    </kbd>
+  );
 }

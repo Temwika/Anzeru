@@ -1,14 +1,31 @@
 "use client";
 
-import { CHANNELS, COLLECTION_ACTIVITY_TYPES, LABELS, type Channel } from "@anzelu/contracts";
+import { CHANNELS, COLLECTION_ACTIVITY_TYPES, LABELS, type Channel, rateText } from "@anzelu/contracts";
 import { useQueryClient } from "@tanstack/react-query";
-import { Banknote, MessageSquarePlus, Send, ShieldCheck } from "lucide-react";
-import Link from "next/link";
+import { Banknote, MessageSquarePlus, Printer, Send, ShieldCheck } from "lucide-react";
 import { useParams } from "next/navigation";
 import { useState } from "react";
 import { JourneyCard, NextStep } from "@/components/journey";
 import { useToast } from "@/components/toast";
-import { Badge, Button, ButtonLink, Card, CardHeader, Detail, ErrorState, Field, inputClass, Modal, Notice, PageHeader, Skeleton, StatusBadge, Table, Tabs, Td, Th } from "@/components/ui";
+import {
+  Badge,
+  Button,
+  ButtonLink,
+  Card,
+  Detail,
+  ErrorState,
+  Field,
+  inputClass,
+  Modal,
+  Notice,
+  PageHeader,
+  Skeleton,
+  StatusBadge,
+  Table,
+  Tabs,
+  Td,
+  Th,
+} from "@/components/ui";
 import { api, newIdempotencyKey, useApi, useSession } from "@/lib/api";
 import { dateTime, kwacha, label, pct, shortDate } from "@/lib/format";
 
@@ -57,9 +74,29 @@ interface Loan {
     nextDueAmount: string;
   };
   schedule: ScheduleItem[];
-  disbursements: { id: string; amount: string; fee: string; netAmount: string; channel: Channel; destination: string; valueDate: string; status: string; requestedAt: string; requestedByName: string; providerRef: string | null }[];
+  disbursements: {
+    id: string;
+    amount: string;
+    fee: string;
+    netAmount: string;
+    channel: Channel;
+    destination: string;
+    valueDate: string;
+    status: string;
+    requestedAt: string;
+    requestedByName: string;
+    providerRef: string | null;
+  }[];
   payments: { id: string; receiptNumber: string; amount: string; channel: Channel; externalRef: string | null; receivedOn: string; status: string }[];
-  activities: { id: string; type: string; note: string; promisedAmount: string | null; promisedDate: string | null; createdAt: string; createdByName: string }[];
+  activities: {
+    id: string;
+    type: string;
+    note: string;
+    promisedAmount: string | null;
+    promisedDate: string | null;
+    createdAt: string;
+    createdByName: string;
+  }[];
   settlement: { asOf: string; principal: string; interest: string; fees: string; penalties: string; total: string } | null;
   disclosure: { aprPct: string; effectiveAnnualRatePct: string } | null;
   permissions: { canRequestDisbursement: boolean; canAuthoriseDisbursement: boolean; canRecordPayment: boolean };
@@ -130,9 +167,22 @@ export default function LoanPage() {
 
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <Stat label="Outstanding balance" value={kwacha(p.totalOutstanding)} sub={`Principal ${kwacha(p.principalOutstanding)}`} />
-        <Stat label="Next instalment" value={p.nextDueDate ? kwacha(p.nextDueAmount) : "—"} sub={p.nextDueDate ? `Due ${shortDate(p.nextDueDate)}` : "Nothing scheduled"} />
-        <Stat label="Arrears" value={kwacha(p.overdueAmount)} sub={p.daysPastDue ? `${p.daysPastDue} days past due` : "Up to date"} tone={p.daysPastDue ? "bad" : undefined} />
-        <Stat label="Settle today" value={loan.settlement ? kwacha(loan.settlement.total) : "—"} sub={loan.settlement ? "Future interest waived" : "Not active"} />
+        <Stat
+          label="Next instalment"
+          value={p.nextDueDate ? kwacha(p.nextDueAmount) : "—"}
+          sub={p.nextDueDate ? `Due ${shortDate(p.nextDueDate)}` : "Nothing scheduled"}
+        />
+        <Stat
+          label="Arrears"
+          value={kwacha(p.overdueAmount)}
+          sub={p.daysPastDue ? `${p.daysPastDue} days past due` : "Up to date"}
+          tone={p.daysPastDue ? "bad" : undefined}
+        />
+        <Stat
+          label="Settle today"
+          value={loan.settlement ? kwacha(loan.settlement.total) : "—"}
+          sub={loan.settlement ? "Future interest waived" : "Not active"}
+        />
       </div>
 
       <Card className="mt-6">
@@ -140,7 +190,7 @@ export default function LoanPage() {
           <Detail label="Principal">{kwacha(loan.principal)}</Detail>
           <Detail label="Processing fee">{kwacha(loan.processingFee)}</Detail>
           <Detail label="Pricing">
-            {Number(loan.annualRatePct)}% p.a. · {LABELS.interestMethod[loan.interestMethod]}
+            {rateText(loan.interestMethod, loan.annualRatePct)} · {LABELS.interestMethod[loan.interestMethod]}
           </Detail>
           <Detail label="Term">
             {loan.term} × {LABELS.frequency[loan.frequency].toLowerCase()}
@@ -229,7 +279,10 @@ export default function LoanPage() {
                   <Td>
                     <StatusBadge status={pay.status} />
                   </Td>
-                  <Td className="text-right">
+                  <Td className="whitespace-nowrap text-right">
+                    <ButtonLink href={`/receipts/${pay.id}`} size="sm" variant="ghost" aria-label={`Print receipt ${pay.receiptNumber}`}>
+                      <Printer className="size-4" />
+                    </ButtonLink>
                     {pay.status === "posted" && user?.permissions.includes("payments:reverse:request") && (
                       <Button size="sm" variant="ghost" onClick={() => setDialog({ reverse: pay.id })}>
                         Request reversal
@@ -326,7 +379,17 @@ export default function LoanPage() {
   );
 }
 
-function LoanNextStep({ loan, pending, canCollect, open }: { loan: Loan; pending?: Loan["disbursements"][number]; canCollect: boolean; open: (d: Dialog) => void }) {
+function LoanNextStep({
+  loan,
+  pending,
+  canCollect,
+  open,
+}: {
+  loan: Loan;
+  pending?: Loan["disbursements"][number];
+  canCollect: boolean;
+  open: (d: Dialog) => void;
+}) {
   const p = loan.position;
   const perms = loan.permissions;
   if (loan.status === "pending_disbursement") {
@@ -386,10 +449,15 @@ function LoanNextStep({ loan, pending, canCollect, open }: { loan: Loan; pending
       <NextStep
         tone="done"
         title="Up to date"
-        body={p.nextDueDate ? `Next instalment of ${kwacha(p.nextDueAmount)} is due on ${shortDate(p.nextDueDate)}. A reminder SMS goes out 3 days before.` : "All instalments are paid."}
+        body={
+          p.nextDueDate
+            ? `Next instalment of ${kwacha(p.nextDueAmount)} is due on ${shortDate(p.nextDueDate)}. A reminder SMS goes out 3 days before.`
+            : "All instalments are paid."
+        }
       />
     );
-  if (loan.status === "closed") return <NextStep tone="done" title="Loan fully repaid and closed" body="Thank the customer and consider them for a repeat loan." />;
+  if (loan.status === "closed")
+    return <NextStep tone="done" title="Loan fully repaid and closed" body="Thank the customer and consider them for a repeat loan." />;
   return null;
 }
 
@@ -425,7 +493,23 @@ function useAction(onDone: DialogProps["onDone"]) {
   return { busy, error, run };
 }
 
-function Footer({ busy, error, onClose, submit, label, disabled, danger }: { busy: boolean; error: string | null; onClose: () => void; submit: () => void; label: string; disabled?: boolean; danger?: boolean }) {
+function Footer({
+  busy,
+  error,
+  onClose,
+  submit,
+  label,
+  disabled,
+  danger,
+}: {
+  busy: boolean;
+  error: string | null;
+  onClose: () => void;
+  submit: () => void;
+  label: string;
+  disabled?: boolean;
+  danger?: boolean;
+}) {
   return (
     <>
       {error && (
@@ -451,7 +535,12 @@ function DisburseDialog({ loan, onClose, onDone }: DialogProps & { loan: Loan })
   const { busy, error, run } = useAction(onDone);
   const net = Number(loan.principal) - Number(loan.processingFee);
   return (
-    <Modal open onClose={onClose} title="Request disbursement" description={`${kwacha(loan.principal)} less ${kwacha(loan.processingFee)} fee = ${kwacha(net)} paid to the customer.`}>
+    <Modal
+      open
+      onClose={onClose}
+      title="Request disbursement"
+      description={`${kwacha(loan.principal)} less ${kwacha(loan.processingFee)} fee = ${kwacha(net)} paid to the customer.`}
+    >
       <div className="space-y-4">
         <Field label="Payout channel">
           <select className={inputClass} value={channel} onChange={(e) => setChannel(e.target.value as Channel)}>
@@ -473,7 +562,9 @@ function DisburseDialog({ loan, onClose, onDone }: DialogProps & { loan: Loan })
         onClose={onClose}
         label="Send for authorisation"
         disabled={destination.trim().length < 3}
-        submit={() => run(async () => (await api.post(`/loans/${loan.id}/disbursements`, { channel, destination }), "Disbursement requested and sent for authorisation."))}
+        submit={() =>
+          run(async () => (await api.post(`/loans/${loan.id}/disbursements`, { channel, destination }), "Disbursement requested and sent for authorisation."))
+        }
       />
     </Modal>
   );
@@ -488,7 +579,12 @@ function AuthoriseDialog({ loanId, pending, onClose, onDone }: DialogProps & { l
       return r.status === "completed" ? `Paid out. Provider reference ${r.providerRef}. Schedule generated and journal posted.` : "Disbursement rejected.";
     });
   return (
-    <Modal open onClose={onClose} title={`Authorise payout of ${kwacha(pending.netAmount)}`} description={`To ${LABELS.channel[pending.channel]} ${pending.destination}, requested by ${pending.requestedByName}.`}>
+    <Modal
+      open
+      onClose={onClose}
+      title={`Authorise payout of ${kwacha(pending.netAmount)}`}
+      description={`To ${LABELS.channel[pending.channel]} ${pending.destination}, requested by ${pending.requestedByName}.`}
+    >
       <Field label="Note (optional)">
         <input className={inputClass} value={note} onChange={(e) => setNote(e.target.value)} />
       </Field>
@@ -604,7 +700,12 @@ function ReversalDialog({ paymentId, onClose, onDone }: DialogProps & { paymentI
   const [reason, setReason] = useState("");
   const { busy, error, run } = useAction(onDone);
   return (
-    <Modal open onClose={onClose} title="Request payment reversal" description="Another user must approve it. The original entries stay on record and a mirror journal is posted.">
+    <Modal
+      open
+      onClose={onClose}
+      title="Request payment reversal"
+      description="Another user must approve it. The original entries stay on record and a mirror journal is posted."
+    >
       <Field label="Reason">
         <textarea className={inputClass} rows={3} value={reason} onChange={(e) => setReason(e.target.value)} />
       </Field>

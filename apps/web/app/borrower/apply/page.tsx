@@ -1,6 +1,6 @@
 "use client";
 
-import type { Frequency } from "@anzelu/contracts";
+import { LABELS, rateText, type Frequency } from "@anzelu/contracts";
 import { ArrowLeft, ArrowRight, CircleAlert, CircleCheck, Info, PartyPopper, ShieldCheck } from "lucide-react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -499,8 +499,9 @@ function QuoteCard({
       {!compact && (
         <p className="relative flex items-start gap-2 border-t border-white/10 bg-white/[0.03] px-6 py-3 text-xs text-slate-400">
           <Info className="mt-0.5 size-3.5 shrink-0" />
-          Representative example: {kwacha(amount)} over {periods(term, product.repaymentFrequency)} at {Number(product.annualRatePct)}% a year (
-          {product.interestMethod.replace("_", " ")}), {Number(product.processingFeePct)}% processing fee. No penalty for paying early.
+          Representative example: {kwacha(amount)} over {periods(term, product.repaymentFrequency)} at{" "}
+          {rateText(product.interestMethod, product.annualRatePct, true)} ({LABELS.interestMethod[product.interestMethod].toLowerCase()}),{" "}
+          {Number(product.processingFeePct)}% processing fee. No penalty for paying early.
         </p>
       )}
     </div>

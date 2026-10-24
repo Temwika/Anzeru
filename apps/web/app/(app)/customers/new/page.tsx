@@ -16,7 +16,11 @@ type Values = z.input<typeof customerCreateSchema>;
 
 const STEPS: { label: string; description: string; fields: (keyof Values)[] }[] = [
   { label: "Identity", description: "Who they are", fields: ["firstName", "lastName", "nrc", "dateOfBirth", "gender", "branchId"] },
-  { label: "Contact & income", description: "How to reach them", fields: ["phone", "email", "address", "nextOfKinName", "nextOfKinPhone", "employer", "occupation", "monthlyIncome"] },
+  {
+    label: "Contact & income",
+    description: "How to reach them",
+    fields: ["phone", "email", "address", "nextOfKinName", "nextOfKinPhone", "employer", "occupation", "monthlyIncome"],
+  },
   { label: "Review & consent", description: "Confirm and save", fields: ["consent"] },
 ];
 
@@ -25,6 +29,7 @@ export default function NewCustomerPage() {
   const toast = useToast();
   const { data: user } = useSession();
   const { data: branches } = useApi<{ id: string; name: string }[]>("/branches");
+  const { data: groups } = useApi<{ id: string; name: string; branchName: string; isActive: boolean }[]>("/loan-groups");
   const [step, setStep] = useState(0);
   const [error, setError] = useState<string | null>(null);
   const {
@@ -61,13 +66,22 @@ export default function NewCustomerPage() {
     }
   });
 
-  const steps: Step[] = STEPS.map((s, i) => ({ label: s.label, description: s.description, state: i < step ? "complete" : i === step ? "current" : "upcoming" }));
+  const steps: Step[] = STEPS.map((s, i) => ({
+    label: s.label,
+    description: s.description,
+    state: i < step ? "complete" : i === step ? "current" : "upcoming",
+  }));
   const v = getValues();
   const branchName = allowed?.find((b) => b.id === v.branchId)?.name;
 
   return (
     <>
-      <PageHeader back={{ href: "/customers", label: "Customers" }} eyebrow="Onboarding" title="Register a customer" description="Three short steps. Consent is captured before any credit check." />
+      <PageHeader
+        back={{ href: "/customers", label: "Customers" }}
+        eyebrow="Onboarding"
+        title="Register a customer"
+        description="Three short steps. Consent is captured before any credit check."
+      />
 
       <div className="grid gap-6 lg:grid-cols-[1fr_300px]">
         <form onSubmit={onSubmit} noValidate>
@@ -151,6 +165,18 @@ export default function NewCustomerPage() {
                       <Field label="Net monthly income (ZMW)" required error={errors.monthlyIncome?.message}>
                         <input {...f("monthlyIncome")} inputMode="decimal" placeholder="0.00" />
                       </Field>
+                      <Field label="Loan group" error={errors.groupId?.message} hint="For marketeers who meet and repay together" className="sm:col-span-3">
+                        <select {...register("groupId", { setValueAs: (x) => x || undefined })} className={inputClass} defaultValue="">
+                          <option value="">Not in a group</option>
+                          {groups
+                            ?.filter((g) => g.isActive)
+                            .map((g) => (
+                              <option key={g.id} value={g.id}>
+                                {g.name} · {g.branchName}
+                              </option>
+                            ))}
+                        </select>
+                      </Field>
                     </div>
                   </section>
                 </div>
@@ -166,13 +192,14 @@ export default function NewCustomerPage() {
                     <Summary label="Mobile" value={v.phone} />
                     <Summary label="Address" value={v.address as string} />
                     <Summary label="Employer" value={(v.employer as string | undefined) || "—"} />
+                    <Summary label="Loan group" value={groups?.find((g) => g.id === v.groupId)?.name ?? "—"} />
                     <Summary label="Monthly income" value={v.monthlyIncome ? kwacha(v.monthlyIncome as string) : "—"} />
                   </dl>
                   <label className="flex cursor-pointer items-start gap-3 rounded-2xl border border-slate-200 p-4 transition has-[:checked]:border-brand-400 has-[:checked]:bg-brand-50/50">
                     <input type="checkbox" className="mt-0.5 size-4 accent-brand-600" {...register("consent")} />
                     <span className="text-sm leading-relaxed text-slate-700">
-                      <span className="font-semibold text-slate-900">The customer gives consent.</span> They agree to the processing of their personal data under the
-                      Data Protection Act, 2021, and to credit checks for this and future applications.
+                      <span className="font-semibold text-slate-900">The customer gives consent.</span> They agree to the processing of their personal data
+                      under the Data Protection Act, 2021, and to credit checks for this and future applications.
                       {errors.consent && <span className="mt-1 block text-xs font-medium text-rose-600">{errors.consent.message}</span>}
                     </span>
                   </label>

@@ -68,7 +68,7 @@ export default function LoginPage() {
           </ul>
         </div>
 
-        <p className="relative text-xs text-slate-500">© 2026 Uplift Services Limited · Lusaka, Zambia</p>
+        <p className="relative text-xs text-slate-500">© 2026 Chilimbitso Money Lending · Sinda, Eastern Province</p>
       </div>
 
       <div className="flex flex-col items-center justify-center bg-white px-6 py-10 sm:px-10">

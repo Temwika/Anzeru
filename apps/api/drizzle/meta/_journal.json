@@ -22,6 +22,13 @@
       "when": 1792836086950,
       "tag": "0002_self_service",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1792842860537,
+      "tag": "0003_marketeers_groups_company",
+      "breakpoints": true
     }
   ]
 }

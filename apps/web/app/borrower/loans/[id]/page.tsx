@@ -1,6 +1,6 @@
 "use client";
 
-import { LABELS, type Channel, type Frequency, type InterestMethod } from "@anzelu/contracts";
+import { LABELS, rateText, type Channel, type Frequency, type InterestMethod } from "@anzelu/contracts";
 import { ArrowLeft, Check, PiggyBank, Receipt, Smartphone } from "lucide-react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
@@ -53,7 +53,8 @@ export default function BorrowerLoanPage() {
               <StatusBadge status={l.status} />
             </div>
             <p className="mt-1 text-sm text-slate-500">
-              {l.loanNumber} · {kwacha(l.principal)} at {Number(l.annualRatePct)}% a year · {LABELS.frequency[l.frequency].toLowerCase()} repayments
+              {l.loanNumber} · {kwacha(l.principal)} at {rateText(l.interestMethod, l.annualRatePct, true)} · {LABELS.frequency[l.frequency].toLowerCase()}{" "}
+              repayments
             </p>
           </div>
           {l.progress.total > 0 && <ProgressRing paid={l.progress.paid} total={l.progress.total} size={88} />}

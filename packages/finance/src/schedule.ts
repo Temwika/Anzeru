@@ -1,11 +1,18 @@
-import { dueDate, Frequency, PERIODS_PER_YEAR } from './dates';
-import { D, Dec, dec, m, MoneyLike, round2, sum, ZERO } from './money';
+import { dueDate, Frequency, PERIODS_PER_YEAR } from "./dates";
+import { D, Dec, dec, m, MoneyLike, round2, sum, ZERO } from "./money";
 
-export type InterestMethod = 'reducing_balance' | 'flat' | 'interest_only';
+/**
+ * - reducing_balance: annuity on the declining balance, annual rate.
+ * - flat: interest on the original principal for the time it is lent, annual rate.
+ * - flat_term: a fixed percentage of the principal for the whole loan, however long it runs
+ *   (e.g. 40% over 28 days: K500 borrowed, K700 repaid). The rate field holds that percentage.
+ * - interest_only: interest each period, principal at the end (bullet), annual rate.
+ */
+export type InterestMethod = "reducing_balance" | "flat" | "flat_term" | "interest_only";
 
 export interface ScheduleInput {
   principal: MoneyLike;
-  /** Nominal annual rate in percent, e.g. "36" for 36% p.a. */
+  /** Nominal annual rate in percent, e.g. "36" for 36% p.a.; for flat_term, the percentage charged for the whole loan. */
   annualRatePct: MoneyLike;
   term: number;
   method: InterestMethod;
@@ -51,14 +58,14 @@ export function annuityInstallment(principal: MoneyLike, rate: Dec, n: number): 
 export function generateSchedule(input: ScheduleInput): Schedule {
   const principal = round2(input.principal);
   const n = input.term;
-  if (!Number.isInteger(n) || n < 1) throw new Error('Term must be a positive whole number of instalments');
-  if (principal.lte(0)) throw new Error('Principal must be greater than zero');
-  if (dec(input.annualRatePct).lt(0)) throw new Error('Interest rate cannot be negative');
+  if (!Number.isInteger(n) || n < 1) throw new Error("Term must be a positive whole number of instalments");
+  if (principal.lte(0)) throw new Error("Principal must be greater than zero");
+  if (dec(input.annualRatePct).lt(0)) throw new Error("Interest rate cannot be negative");
 
-  const r = periodicRate(input.annualRatePct, input.frequency);
+  const r = input.method === "flat_term" ? dec(input.annualRatePct).div(100).div(n) : periodicRate(input.annualRatePct, input.frequency);
   const rows: { principal: Dec; interest: Dec }[] = [];
 
-  if (input.method === 'reducing_balance') {
+  if (input.method === "reducing_balance") {
     const a = annuityInstallment(principal, r, n);
     let balance = principal;
     for (let k = 1; k <= n; k++) {
@@ -69,8 +76,8 @@ export function generateSchedule(input: ScheduleInput): Schedule {
       rows.push({ principal: princ, interest });
       balance = balance.minus(princ);
     }
-  } else if (input.method === 'flat') {
-    const years = new D(n).div(PERIODS_PER_YEAR[input.frequency]);
+  } else if (input.method === "flat" || input.method === "flat_term") {
+    const years = input.method === "flat" ? new D(n).div(PERIODS_PER_YEAR[input.frequency]) : new D(1);
     const totalInterest = round2(principal.times(dec(input.annualRatePct).div(100)).times(years));
     const perInterest = round2(totalInterest.div(n));
     const perPrincipal = round2(principal.div(n));
@@ -119,7 +126,11 @@ export function generateSchedule(input: ScheduleInput): Schedule {
     processingFee: m(processingFee),
     netDisbursed: m(netDisbursed),
     installmentAmount: installments[0].total,
-    disclosure: costOfCredit(netDisbursed, installments.map((i) => i.total), input.frequency),
+    disclosure: costOfCredit(
+      netDisbursed,
+      installments.map((i) => i.total),
+      input.frequency,
+    ),
   };
 }
 
@@ -129,15 +140,11 @@ export function generateSchedule(input: ScheduleInput): Schedule {
  * which makes flat-rate and fee-heavy products comparable with reducing-balance
  * ones. Used for disclosure only — never for posting.
  */
-export function costOfCredit(
-  netDisbursed: MoneyLike,
-  payments: MoneyLike[],
-  frequency: Frequency,
-): { aprPct: string; effectiveAnnualRatePct: string } {
+export function costOfCredit(netDisbursed: MoneyLike, payments: MoneyLike[], frequency: Frequency): { aprPct: string; effectiveAnnualRatePct: string } {
   const net = dec(netDisbursed);
   const flows = payments.map(dec);
   const pv = (i: Dec) => flows.reduce<Dec>((acc, cf, k) => acc.plus(cf.div(i.plus(1).pow(k + 1))), ZERO);
-  if (net.lte(0) || sum(flows).lte(net)) return { aprPct: '0.00', effectiveAnnualRatePct: '0.00' };
+  if (net.lte(0) || sum(flows).lte(net)) return { aprPct: "0.00", effectiveAnnualRatePct: "0.00" };
 
   let lo = new D(0);
   let hi = new D(1);
@@ -146,7 +153,7 @@ export function costOfCredit(
     const mid = lo.plus(hi).div(2);
     if (pv(mid).gt(net)) lo = mid;
     else hi = mid;
-    if (hi.minus(lo).lt('1e-12')) break;
+    if (hi.minus(lo).lt("1e-12")) break;
   }
   const i = lo.plus(hi).div(2);
   const ppy = PERIODS_PER_YEAR[frequency];

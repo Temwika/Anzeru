@@ -8,7 +8,25 @@ import { useParams, useSearchParams } from "next/navigation";
 import { useState } from "react";
 import { NextStep } from "@/components/journey";
 import { useToast } from "@/components/toast";
-import { Avatar, Button, ButtonLink, Card, CardHeader, Detail, ErrorState, Field, inputClass, Notice, PageHeader, Skeleton, StatusBadge, Stepper, Table, Td, Th } from "@/components/ui";
+import {
+  Avatar,
+  Button,
+  ButtonLink,
+  Card,
+  CardHeader,
+  Detail,
+  ErrorState,
+  Field,
+  inputClass,
+  Notice,
+  PageHeader,
+  Skeleton,
+  StatusBadge,
+  Stepper,
+  Table,
+  Td,
+  Th,
+} from "@/components/ui";
 import { api, useApi, useSession } from "@/lib/api";
 import { kwacha, shortDate } from "@/lib/format";
 
@@ -32,6 +50,8 @@ interface Customer {
   kycNote: string | null;
   consentAt: string;
   branchName: string;
+  groupId: string | null;
+  groupName: string | null;
   documents: { id: string; docType: DocumentType; fileName: string; sizeBytes: number; createdAt: string }[];
   loans: { id: string; loanNumber: string; principal: string; status: string; disbursedOn: string | null }[];
   possibleDuplicates: { id: string; customerNumber: string; firstName: string; lastName: string }[];
@@ -73,7 +93,11 @@ export default function CustomerPage() {
     try {
       await api.post(`/customers/${id}/kyc`, { status });
       await refresh();
-      toast({ tone: status === "verified" ? "success" : "info", title: status === "verified" ? "KYC verified" : "KYC rejected", body: status === "verified" ? "The customer can now apply for a loan." : undefined });
+      toast({
+        tone: status === "verified" ? "success" : "info",
+        title: status === "verified" ? "KYC verified" : "KYC rejected",
+        body: status === "verified" ? "The customer can now apply for a loan." : undefined,
+      });
     } catch (e) {
       setActionError((e as Error).message);
     } finally {
@@ -91,7 +115,16 @@ export default function CustomerPage() {
         title={`${c.firstName} ${c.lastName}`}
         description={
           <span className="flex items-center gap-2">
-            {c.customerNumber} · {c.branchName} <StatusBadge status={c.kycStatus} />
+            {c.customerNumber} · {c.branchName}
+            {c.groupId && (
+              <>
+                {" · "}
+                <Link href={`/groups/${c.groupId}`} className="font-medium text-brand-700 hover:underline">
+                  {c.groupName}
+                </Link>
+              </>
+            )}{" "}
+            <StatusBadge status={c.kycStatus} />
           </span>
         }
         actions={
@@ -121,7 +154,12 @@ export default function CustomerPage() {
         {actionError && <Notice tone="error">{actionError}</Notice>}
       </div>
 
-      <OnboardingCard customer={c} canVerify={!!user?.permissions.includes("customers:verify")} canApply={!!user?.permissions.includes("applications:write")} canUpload={!!user?.permissions.includes("customers:write")} />
+      <OnboardingCard
+        customer={c}
+        canVerify={!!user?.permissions.includes("customers:verify")}
+        canApply={!!user?.permissions.includes("applications:write")}
+        canUpload={!!user?.permissions.includes("customers:write")}
+      />
 
       <div className="mt-6 grid gap-6 lg:grid-cols-3">
         <Card className="lg:col-span-2">
@@ -174,7 +212,12 @@ export default function CustomerPage() {
               <label className="flex cursor-pointer items-center justify-center gap-2 rounded-lg border border-dashed border-slate-300 px-3 py-3 text-sm text-slate-600 hover:border-brand-400 hover:bg-brand-50">
                 <Upload className="size-4" />
                 {busy === "upload" ? "Uploading…" : "Upload PDF, JPEG or PNG (max 5 MB)"}
-                <input type="file" className="hidden" accept="application/pdf,image/jpeg,image/png" onChange={(e) => e.target.files?.[0] && upload(e.target.files[0])} />
+                <input
+                  type="file"
+                  className="hidden"
+                  accept="application/pdf,image/jpeg,image/png"
+                  onChange={(e) => e.target.files?.[0] && upload(e.target.files[0])}
+                />
               </label>
             </div>
           )}
@@ -239,15 +282,35 @@ function OnboardingCard({ customer: c, canVerify, canApply, canUpload }: { custo
   const steps = [
     { label: "Registered", state: "complete" as const, description: shortDate(c.consentAt) },
     { label: "Documents", state: hasNrc ? ("complete" as const) : ("current" as const), description: `${c.documents.length} on file` },
-    { label: "KYC", state: verified ? ("complete" as const) : rejected ? ("failed" as const) : hasNrc ? ("current" as const) : ("upcoming" as const), description: verified ? "Verified" : rejected ? "Rejected" : "Pending review" },
-    { label: "First loan", state: hasLoan ? ("complete" as const) : verified ? ("current" as const) : ("upcoming" as const), description: hasLoan ? `${c.loans.length} on record` : undefined },
+    {
+      label: "KYC",
+      state: verified ? ("complete" as const) : rejected ? ("failed" as const) : hasNrc ? ("current" as const) : ("upcoming" as const),
+      description: verified ? "Verified" : rejected ? "Rejected" : "Pending review",
+    },
+    {
+      label: "First loan",
+      state: hasLoan ? ("complete" as const) : verified ? ("current" as const) : ("upcoming" as const),
+      description: hasLoan ? `${c.loans.length} on record` : undefined,
+    },
   ];
   let next: React.ReactNode;
   if (rejected) next = <NextStep tone="done" title="KYC was rejected" body={c.kycNote ?? "This customer cannot apply until new documents are reviewed."} />;
   else if (!hasNrc)
-    next = <NextStep tone={canUpload ? "you" : "waiting"} title="Upload the customer’s NRC" body="A copy of the National Registration Card is required before KYC can be verified. Use the uploader on the right." />;
+    next = (
+      <NextStep
+        tone={canUpload ? "you" : "waiting"}
+        title="Upload the customer’s NRC"
+        body="A copy of the National Registration Card is required before KYC can be verified. Use the uploader on the right."
+      />
+    );
   else if (!verified)
-    next = <NextStep tone={canVerify ? "you" : "waiting"} title={canVerify ? "Review the documents and verify KYC" : "Waiting for a manager to verify KYC"} body="Check the NRC matches the details captured at registration." />;
+    next = (
+      <NextStep
+        tone={canVerify ? "you" : "waiting"}
+        title={canVerify ? "Review the documents and verify KYC" : "Waiting for a manager to verify KYC"}
+        body="Check the NRC matches the details captured at registration."
+      />
+    );
   else if (!hasLoan)
     next = (
       <NextStep

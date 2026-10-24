@@ -103,16 +103,16 @@ describe('lending lifecycle', () => {
 
   test('officer registers a customer with KYC documents; manager verifies', async () => {
     const branches = await s.officer.get('/branches');
-    const lusaka = branches.data.find((b) => b.code === 'LSK');
+    const sinda = branches.data.find((b) => b.code === 'SND');
     const customer = {
-      branchId: lusaka.id,
+      branchId: sinda.id,
       firstName: 'Test',
       lastName: 'Borrower',
       nrc: '555555/55/1',
       phone: '0977000111',
       dateOfBirth: '1988-04-12',
       gender: 'female',
-      address: 'Plot 1, Rhodes Park, Lusaka',
+      address: 'Stand 12, Sinda Market, Sinda',
       employer: 'Ministry of Finance',
       monthlyIncome: '15000',
       consent: true,

@@ -3,7 +3,24 @@
 import { ROLE_LABELS, type Permission, type SessionUser } from "@anzelu/contracts";
 import { useQueryClient } from "@tanstack/react-query";
 import {
+  ArrowLeftRight,
   Bell,
+  Building,
+  CalendarCheck,
+  CalendarX2,
+  DatabaseBackup,
+  Download,
+  FileCheck2,
+  FilePlus2,
+  Gauge,
+  Hourglass,
+  IdCard,
+  MessageSquareText,
+  Package,
+  PhoneCall,
+  UserRoundSearch,
+  UsersRound,
+  Wallet,
   BookOpenCheck,
   Building2,
   ChartNoAxesCombined,
@@ -56,49 +73,105 @@ interface NavItem {
 
 const APPROVER: Permission[] = ["applications:decide", "disbursements:authorise", "payments:reverse:approve"];
 
+/** Follows the menu staff already know from the previous system. */
 const NAV: { section: string; items: NavItem[] }[] = [
   {
     section: "Overview",
     items: [
-      { href: "/dashboard", label: "Home", icon: LayoutDashboard, permission: "loans:read" },
+      { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard, permission: "loans:read" },
       { href: "/approvals", label: "Approvals", icon: CheckCheck, anyOf: APPROVER, badge: (t) => t.applications + t.disbursements + t.reversals },
     ],
   },
   {
     section: "Lending",
     items: [
-      { href: "/customers", label: "Customers", icon: Users, permission: "customers:read", badge: (t) => t.kyc },
-      { href: "/applications", label: "Applications", icon: BookOpenCheck, permission: "applications:read" },
       { href: "/loans", label: "Loans", icon: HandCoins, permission: "loans:read" },
+      { href: "/applications/new", label: "New Loan", icon: FilePlus2, permission: "applications:write" },
+      { href: "/loans/due-today", label: "Due Today", icon: CalendarCheck, permission: "loans:read" },
+      { href: "/loans/arrears", label: "Arrears", icon: Siren, permission: "loans:read" },
+      { href: "/loans/past-maturity", label: "Past Maturity", icon: CalendarX2, permission: "loans:read" },
+      { href: "/loans/maturing-soon", label: "Maturing Soon", icon: Hourglass, permission: "loans:read" },
+      { href: "/groups", label: "Loan Groups", icon: UsersRound, permission: "customers:read" },
+      { href: "/applications", label: "Applications", icon: BookOpenCheck, permission: "applications:read" },
       { href: "/repayments", label: "Repayments", icon: ReceiptText, permission: "payments:read" },
-      { href: "/collections", label: "Collections", icon: Siren, permission: "collections:read" },
+      { href: "/collections", label: "Collections", icon: PhoneCall, permission: "collections:read" },
     ],
   },
   {
-    section: "Finance",
+    section: "Borrowers",
     items: [
-      { href: "/accounting", label: "Accounting", icon: Landmark, permission: "accounting:read" },
+      { href: "/customers", label: "Borrowers", icon: Users, permission: "customers:read", badge: (t) => t.kyc },
+      { href: "/customers/new", label: "Add Borrower", icon: UserPlus, permission: "customers:write" },
+    ],
+  },
+  {
+    section: "Products",
+    items: [{ href: "/products", label: "Loan Products", icon: Package, permission: "settings:manage" }],
+  },
+  {
+    section: "Reports",
+    items: [
       { href: "/reports", label: "Reports", icon: ChartNoAxesCombined, permission: "reports:read" },
+      { href: "/reports/portfolio-quality", label: "Portfolio Quality", icon: Gauge, permission: "reports:read" },
+      { href: "/reports/auditor", label: "Auditor Report", icon: FileCheck2, permission: "reports:read" },
+      { href: "/reports/branches", label: "By Branch", icon: Building, permission: "reports:read" },
+      { href: "/reports/collections", label: "Collection Report", icon: Wallet, permission: "reports:read" },
+      { href: "/reports/exports", label: "Exports", icon: Download, permission: "reports:read" },
+      { href: "/accounting", label: "Accounting", icon: Landmark, permission: "accounting:read" },
     ],
   },
   {
-    section: "Administration",
+    section: "Branches",
     items: [
-      { href: "/settings", label: "Settings", icon: Settings, anyOf: ["settings:manage", "jobs:run"] },
-      { href: "/audit", label: "Audit trail", icon: ScrollText, permission: "audit:read" },
-      { href: "/admin/tenants", label: "Institutions", icon: Building2, permission: "tenants:manage" },
+      { href: "/branches", label: "Branches", icon: Building2, permission: "settings:manage" },
+      { href: "/staff", label: "Staff", icon: IdCard, permission: "settings:manage" },
+      { href: "/arrears-by-officer", label: "Arrears by Officer", icon: UserRoundSearch, permission: "reports:read" },
+      { href: "/transfer", label: "Transfer Client", icon: ArrowLeftRight, permission: "settings:manage" },
     ],
+  },
+  {
+    section: "Platform",
+    items: [{ href: "/admin/tenants", label: "Institutions", icon: Building2, permission: "tenants:manage" }],
   },
 ];
 
-const PAGES: PaletteLink[] = NAV.flatMap((s) => s.items.map((i) => ({ href: i.href, label: i.label, icon: i.icon, permission: i.anyOf ? undefined : i.permission })));
+/** Pinned to the bottom of the sidebar, as in the previous system. */
+const SYSTEM: NavItem[] = [
+  { href: "/company", label: "Company Settings", icon: Settings, anyOf: ["settings:manage", "jobs:run"] },
+  { href: "/backups", label: "Backups", icon: DatabaseBackup, permission: "settings:manage" },
+  { href: "/sms", label: "Bulk SMS", icon: MessageSquareText, permission: "settings:manage" },
+  { href: "/security", label: "Security", icon: KeyRound },
+  { href: "/audit", label: "Audit Log", icon: ScrollText, permission: "audit:read" },
+];
+
+const ALL_ITEMS = [...NAV.flatMap((s) => s.items), ...SYSTEM];
+
+/** The most specific menu entry for a path, so /loans/arrears lights up Arrears rather than Loans. */
+function activeHref(pathname: string) {
+  return ALL_ITEMS.map((i) => i.href)
+    .filter((h) => pathname === h || pathname.startsWith(`${h}/`))
+    .sort((x, y) => y.length - x.length)[0];
+}
+
+const PAGES: PaletteLink[] = ALL_ITEMS.map((i) => ({ href: i.href, label: i.label, icon: i.icon, permission: i.anyOf ? undefined : i.permission }));
 
 const SEGMENT_LABELS: Record<string, string> = {
-  dashboard: "Home",
+  dashboard: "Dashboard",
+  customers: "Borrowers",
+  groups: "Loan Groups",
+  "due-today": "Due Today",
+  "past-maturity": "Past Maturity",
+  "maturing-soon": "Maturing Soon",
+  "arrears-by-officer": "Arrears by Officer",
+  "portfolio-quality": "Portfolio Quality",
+  transfer: "Transfer Client",
+  company: "Company Settings",
+  sms: "Bulk SMS",
+  branches: "By Branch",
   admin: "Platform",
   tenants: "Institutions",
   new: "New",
-  audit: "Audit trail",
+  audit: "Audit Log",
 };
 
 const visible = (i: NavItem, user?: SessionUser) => {
@@ -135,6 +208,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   }, []);
 
   const sections = NAV.map((s) => ({ ...s, items: s.items.filter((i) => visible(i, user)) })).filter((s) => s.items.length);
+  const system = SYSTEM.filter((i) => visible(i, user) && user?.role !== "platform_admin");
+  const current = activeHref(pathname);
 
   async function logout() {
     await api.post("/auth/logout").catch(() => undefined);
@@ -143,7 +218,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   }
 
   const nav = (
-    <nav className="scroll-quiet flex-1 space-y-7 overflow-y-auto px-3 py-5">
+    <nav className="scroll-quiet flex-1 space-y-5 overflow-y-auto px-3 py-4">
       {isLoading
         ? Array.from({ length: 7 }, (_, i) => <div key={i} className="h-9 animate-pulse rounded-lg bg-white/5" />)
         : sections.map((s) => (
@@ -151,22 +226,10 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               <p className="px-3 text-[10.5px] font-semibold uppercase tracking-[0.12em] text-slate-500">{s.section}</p>
               <ul className="mt-2 space-y-0.5">
                 {s.items.map((item) => {
-                  const active = pathname === item.href || pathname.startsWith(`${item.href}/`);
                   const count = tasks && item.badge ? item.badge(tasks) : 0;
                   return (
                     <li key={item.href}>
-                      <Link
-                        href={item.href}
-                        className={cn(
-                          "group relative flex items-center gap-3 rounded-xl px-3 py-2 text-[13.5px] transition",
-                          active ? "bg-white/[0.08] font-medium text-white" : "text-slate-400 hover:bg-white/[0.04] hover:text-slate-100",
-                        )}
-                      >
-                        {active && <span className="absolute inset-y-1.5 -left-3 w-1 rounded-r-full bg-brand-400" />}
-                        <item.icon className={cn("size-[18px]", active ? "text-brand-400" : "text-slate-500 group-hover:text-slate-300")} />
-                        <span className="flex-1">{item.label}</span>
-                        {count > 0 && <span className="tabular rounded-full bg-copper-500 px-1.5 py-px text-[11px] font-semibold text-white">{count}</span>}
-                      </Link>
+                      <NavLink item={item} active={current === item.href} count={count} />
                     </li>
                   );
                 })}
@@ -184,14 +247,15 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         </Link>
       </div>
       {nav}
-      <div className="m-3 rounded-xl border border-white/5 bg-white/[0.03] p-3 text-xs text-slate-400">
-        <p className="flex items-center gap-2 font-medium text-slate-200">
-          <ShieldCheck className="size-4 text-brand-400" /> Secure session
-        </p>
-        <p className="mt-1 leading-relaxed">
-          Press <span className="rounded bg-white/10 px-1 py-px text-slate-200">Ctrl K</span> to find any customer or loan.
-        </p>
-      </div>
+      {system.length > 0 && (
+        <ul className="space-y-0.5 border-t border-white/[0.07] bg-black/15 px-3 py-3">
+          {system.map((item) => (
+            <li key={item.href}>
+              <NavLink item={item} active={current === item.href} compact />
+            </li>
+          ))}
+        </ul>
+      )}
     </>
   );
 
@@ -203,7 +267,11 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         <div className="fixed inset-0 z-40 lg:hidden">
           <div className="absolute inset-0 animate-fade-in bg-ink-950/60" onClick={() => setDrawer(false)} />
           <aside className="absolute inset-y-0 left-0 flex w-72 animate-slide-in-left flex-col bg-ink-950">
-            <button onClick={() => setDrawer(false)} className="absolute right-3 top-4 rounded-md p-1.5 text-slate-400 hover:text-white" aria-label="Close menu">
+            <button
+              onClick={() => setDrawer(false)}
+              className="absolute right-3 top-4 rounded-md p-1.5 text-slate-400 hover:text-white"
+              aria-label="Close menu"
+            >
               <X className="size-5" />
             </button>
             {sidebar}
@@ -246,6 +314,25 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   );
 }
 
+function NavLink({ item, active, count = 0, compact }: { item: NavItem; active: boolean; count?: number; compact?: boolean }) {
+  return (
+    <Link
+      href={item.href}
+      aria-current={active ? "page" : undefined}
+      className={cn(
+        "group relative flex items-center gap-3 rounded-xl px-3 text-[13.5px] transition",
+        compact ? "py-1.5" : "py-[7px]",
+        active ? "bg-brand-500/[0.14] font-medium text-white" : "text-slate-300/80 hover:bg-white/[0.05] hover:text-white",
+      )}
+    >
+      {active && <span className="absolute inset-y-1.5 -left-3 w-1 rounded-r-full bg-brand-500" />}
+      <item.icon className={cn("size-[17px] shrink-0", active ? "text-brand-400" : "text-slate-500 group-hover:text-slate-300")} />
+      <span className="flex-1 truncate">{item.label}</span>
+      {count > 0 && <span className="tabular rounded-full bg-brand-500 px-1.5 py-px text-[11px] font-semibold text-white">{count}</span>}
+    </Link>
+  );
+}
+
 function Breadcrumbs({ pathname }: { pathname: string }) {
   const parts = pathname.split("/").filter(Boolean);
   const crumbs = parts.map((p, i) => ({
@@ -271,7 +358,17 @@ function Breadcrumbs({ pathname }: { pathname: string }) {
 }
 
 /** Click-outside / Escape aware popover used by the top-bar menus. */
-function Popover({ trigger, children, align = "right", label }: { trigger: (open: boolean) => React.ReactNode; children: (close: () => void) => React.ReactNode; align?: "right" | "left"; label: string }) {
+function Popover({
+  trigger,
+  children,
+  align = "right",
+  label,
+}: {
+  trigger: (open: boolean) => React.ReactNode;
+  children: (close: () => void) => React.ReactNode;
+  align?: "right" | "left";
+  label: string;
+}) {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
   const pathname = usePathname();
@@ -293,7 +390,13 @@ function Popover({ trigger, children, align = "right", label }: { trigger: (open
         {trigger(open)}
       </button>
       {open && (
-        <div role="menu" className={cn("absolute top-12 z-30 w-72 animate-pop-in overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-pop", align === "right" ? "right-0" : "left-0")}>
+        <div
+          role="menu"
+          className={cn(
+            "absolute top-12 z-30 w-72 animate-pop-in overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-pop",
+            align === "right" ? "right-0" : "left-0",
+          )}
+        >
           {children(() => setOpen(false))}
         </div>
       )}
@@ -301,7 +404,21 @@ function Popover({ trigger, children, align = "right", label }: { trigger: (open
   );
 }
 
-function MenuLink({ href, icon: Icon, title, body, onClick, count }: { href: string; icon: React.ElementType; title: string; body?: string; onClick: () => void; count?: number }) {
+function MenuLink({
+  href,
+  icon: Icon,
+  title,
+  body,
+  onClick,
+  count,
+}: {
+  href: string;
+  icon: React.ElementType;
+  title: string;
+  body?: string;
+  onClick: () => void;
+  count?: number;
+}) {
   return (
     <Link href={href} onClick={onClick} role="menuitem" className="flex items-start gap-3 px-4 py-3 transition hover:bg-slate-50">
       <span className="grid size-9 shrink-0 place-items-center rounded-xl bg-brand-50 text-brand-700">
@@ -324,7 +441,12 @@ function QuickCreate({ user }: { user: SessionUser }) {
     <Popover
       label="Create new"
       trigger={(open) => (
-        <span className={cn("inline-flex h-10 items-center gap-1.5 rounded-xl bg-brand-600 px-3 text-sm font-medium text-white shadow-sm transition hover:bg-brand-700", open && "bg-brand-700")}>
+        <span
+          className={cn(
+            "inline-flex h-10 items-center gap-1.5 rounded-xl bg-brand-600 px-3 text-sm font-medium text-white shadow-sm transition hover:bg-brand-700",
+            open && "bg-brand-700",
+          )}
+        >
           <Plus className="size-4" />
           <span className="hidden sm:inline">New</span>
           <ChevronDown className="hidden size-3.5 opacity-70 sm:block" />
@@ -333,8 +455,18 @@ function QuickCreate({ user }: { user: SessionUser }) {
     >
       {(close) => (
         <div className="py-2">
-          {canCustomer && <MenuLink href="/customers/new" icon={UserPlus} title="New customer" body="Register identity, contact and income, with consent" onClick={close} />}
-          {canApp && <MenuLink href="/applications/new" icon={BookOpenCheck} title="New loan application" body="Pick a customer and product; we check affordability" onClick={close} />}
+          {canCustomer && (
+            <MenuLink href="/customers/new" icon={UserPlus} title="New customer" body="Register identity, contact and income, with consent" onClick={close} />
+          )}
+          {canApp && (
+            <MenuLink
+              href="/applications/new"
+              icon={BookOpenCheck}
+              title="New loan application"
+              body="Pick a customer and product; we check affordability"
+              onClick={close}
+            />
+          )}
         </div>
       )}
     </Popover>
@@ -343,7 +475,14 @@ function QuickCreate({ user }: { user: SessionUser }) {
 
 function Inbox({ tasks, user }: { tasks?: Tasks; user: SessionUser }) {
   const rows = [
-    { key: "applications", href: "/approvals", icon: BookOpenCheck, title: "Credit applications", body: "Waiting for your decision", count: tasks?.applications ?? 0 },
+    {
+      key: "applications",
+      href: "/approvals",
+      icon: BookOpenCheck,
+      title: "Credit applications",
+      body: "Waiting for your decision",
+      count: tasks?.applications ?? 0,
+    },
     { key: "disbursements", href: "/approvals", icon: HandCoins, title: "Payouts", body: "Waiting for your authorisation", count: tasks?.disbursements ?? 0 },
     { key: "reversals", href: "/approvals", icon: ReceiptText, title: "Payment reversals", body: "Waiting for your approval", count: tasks?.reversals ?? 0 },
     { key: "kyc", href: "/customers?kyc=pending", icon: ShieldCheck, title: "KYC reviews", body: "Customers waiting for verification", count: tasks?.kyc ?? 0 },
@@ -355,7 +494,9 @@ function Inbox({ tasks, user }: { tasks?: Tasks; user: SessionUser }) {
         <span className="relative grid size-10 place-items-center rounded-xl text-slate-500 transition hover:bg-slate-100 hover:text-slate-900">
           <Bell className="size-5" />
           {!!tasks?.total && (
-            <span className="tabular absolute right-1 top-1 grid min-w-4 place-items-center rounded-full bg-copper-500 px-1 text-[10px] font-bold leading-4 text-white ring-2 ring-white">{tasks.total}</span>
+            <span className="tabular absolute right-1 top-1 grid min-w-4 place-items-center rounded-full bg-copper-500 px-1 text-[10px] font-bold leading-4 text-white ring-2 ring-white">
+              {tasks.total}
+            </span>
           )}
         </span>
       )}
