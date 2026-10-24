@@ -1,0 +1,27 @@
+{
+  "name": "anzelu-loan",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Anzelu — multi-tenant loan management platform (Next.js + NestJS + PostgreSQL)",
+  "workspaces": [
+    "packages/*",
+    "apps/*"
+  ],
+  "scripts": {
+    "build:packages": "npm run build -w @anzelu/contracts && npm run build -w @anzelu/finance",
+    "build": "npm run build:packages && npm run build -w @anzelu/api && npm run build -w @anzelu/web",
+    "dev": "npm run build:packages && concurrently -n api,web -c green,cyan \"npm run dev -w @anzelu/api\" \"npm run dev -w @anzelu/web\"",
+    "start": "concurrently -n api,web -c green,cyan \"npm run start -w @anzelu/api\" \"npm run start -w @anzelu/web\"",
+    "seed": "npm run seed -w @anzelu/api",
+    "test": "npm run test -w @anzelu/finance && npm run test:e2e",
+    "test:e2e": "node --test tests/e2e/lifecycle.test.mjs",
+    "typecheck": "npm run typecheck --workspaces --if-present"
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.2",
+    "typescript": "^5.8.0"
+  },
+  "engines": {
+    "node": ">=22.12"
+  }
+}

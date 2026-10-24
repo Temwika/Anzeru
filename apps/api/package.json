@@ -1,0 +1,43 @@
+{
+  "name": "@anzelu/api",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Anzelu lending API (NestJS)",
+  "main": "dist/main.js",
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "dev": "tsc -p tsconfig.build.json && concurrently -k -n tsc,node \"tsc -p tsconfig.build.json --watch --preserveWatchOutput\" \"node --watch-path=dist --enable-source-maps dist/main.js\"",
+    "start": "node --enable-source-maps dist/main.js",
+    "seed": "node --enable-source-maps dist/seed/run-seed.js",
+    "db:generate": "drizzle-kit generate",
+    "typecheck": "tsc -p tsconfig.build.json --noEmit"
+  },
+  "dependencies": {
+    "@anzelu/contracts": "*",
+    "@anzelu/finance": "*",
+    "@nestjs/common": "^11.1.0",
+    "@nestjs/core": "^11.1.0",
+    "@nestjs/platform-express": "^11.1.0",
+    "@nestjs/jwt": "^11.0.0",
+    "@nestjs/throttler": "^6.4.0",
+    "@nestjs/swagger": "^11.2.0",
+    "reflect-metadata": "^0.2.2",
+    "rxjs": "^7.8.2",
+    "cookie-parser": "^1.4.7",
+    "drizzle-orm": "^0.45.4",
+    "pg": "^8.16.0",
+    "@electric-sql/pglite": "^0.5.11",
+    "decimal.js": "^10.6.0",
+    "zod": "^4.1.0"
+  },
+  "devDependencies": {
+    "drizzle-kit": "^0.31.11",
+    "@types/node": "^22",
+    "@types/pg": "^8.15.0",
+    "@types/cookie-parser": "^1.4.10",
+    "@types/express": "^5.0.0",
+    "@types/multer": "^2.0.0",
+    "concurrently": "^9.1.2",
+    "typescript": "^5.8.0"
+  }
+}

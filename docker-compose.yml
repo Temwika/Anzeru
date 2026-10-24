@@ -1,0 +1,50 @@
+# Production-like stack: PostgreSQL, API and web.
+#   cp .env.docker.example .env   # then set real secrets
+#   docker compose up --build
+# Web: http://localhost:3000   API docs: http://localhost:4000/api/docs
+
+services:
+  db:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_USER: anzelu
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}
+      POSTGRES_DB: anzelu
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U anzelu"]
+      interval: 5s
+      retries: 10
+
+  api:
+    build:
+      context: .
+      target: api
+    environment:
+      DATABASE_URL: postgres://anzelu:${POSTGRES_PASSWORD}@db:5432/anzelu
+      JWT_SECRET: ${JWT_SECRET:?set JWT_SECRET (32+ chars) in .env}
+      MOMO_WEBHOOK_SECRET: ${MOMO_WEBHOOK_SECRET:?set MOMO_WEBHOOK_SECRET in .env}
+      SEED_DEMO: ${SEED_DEMO:-false}
+    volumes:
+      - documents:/data/storage
+    ports:
+      - "4000:4000"
+    depends_on:
+      db:
+        condition: service_healthy
+
+  web:
+    build:
+      context: .
+      target: web
+      args:
+        API_URL: http://api:4000
+    ports:
+      - "3000:3000"
+    depends_on:
+      - api
+
+volumes:
+  pgdata:
+  documents:

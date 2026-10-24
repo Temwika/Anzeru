@@ -1,0 +1,16 @@
+node_modules/
+dist/
+.next/
+out/
+coverage/
+*.tsbuildinfo
+.env
+.env.*
+!.env.example
+apps/api/.data/
+apps/api/storage/
+npm-debug.log*
+.DS_Store
+!.env.docker.example
+*.log
+.qodo/
