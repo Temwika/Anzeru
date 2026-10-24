@@ -152,7 +152,7 @@ export function LoginForm({ showDemo }: { showDemo: boolean }) {
               </button>
             ))}
           </div>
-          <p className="mt-3 text-center text-[11px] text-slate-400">Development only · pick a role, then Sign in</p>
+          <p className="mt-3 text-center text-[11px] text-slate-400">Demo accounts · pick a role, then Sign in</p>
         </div>
       )}
     </div>
