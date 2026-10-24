@@ -46,7 +46,7 @@ export async function seedDemo(app: INestApplicationContext) {
   log.log('Seeding demo institution…');
 
   const passwordHash = await hashPassword(DEMO_PASSWORD);
-  const [tenant] = await db.insert(tenants).values({ name: 'Kwacha Growth Microfinance', code: 'DEMO', plan: 'growth' }).returning();
+  const [tenant] = await db.insert(tenants).values({ name: 'Chilimbitso Money Lending', code: 'DEMO', plan: 'growth' }).returning();
   const tenantId = tenant.id;
   await ledger.seedChart(db, tenantId);
   await db.insert(tenants).values({ name: 'Copperbelt Teachers SACCO', code: 'CBTSACCO', plan: 'starter' });
