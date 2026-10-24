@@ -21,7 +21,7 @@ const DEMO_ACCOUNTS = [
   { email: "cashier@demo.zm", role: "Cashier", hint: "Take repayments" },
   { email: "admin@demo.zm", role: "Administrator", hint: "Products & users" },
   { email: "auditor@demo.zm", role: "Auditor", hint: "Read-only review" },
-  { email: "platform@anzelu.io", role: "Platform", hint: "Institutions" },
+  { email: "platform@chilimbitso.zm", role: "Platform", hint: "Institutions" },
   { email: "borrower@demo.zm", role: "Borrower", hint: "Self-service" },
 ];
 const DEMO_PASSWORD = "Demo2026!pass";

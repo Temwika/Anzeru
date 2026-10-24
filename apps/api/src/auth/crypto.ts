@@ -60,6 +60,6 @@ export function verifyTotp(secret: string, code: string, at = Date.now()): boole
   });
 }
 
-export function otpauthUrl(secret: string, account: string, issuer = 'Anzelu'): string {
+export function otpauthUrl(secret: string, account: string, issuer = 'Chilimbitso'): string {
   return `otpauth://totp/${encodeURIComponent(`${issuer}:${account}`)}?secret=${secret}&issuer=${encodeURIComponent(issuer)}&digits=6&period=30`;
 }

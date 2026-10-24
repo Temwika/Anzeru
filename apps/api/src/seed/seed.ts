@@ -61,7 +61,7 @@ export async function seedDemo(app: INestApplicationContext) {
     .returning();
 
   const staff: { key: string; email: string; fullName: string; role: Role; limit?: string; branches?: string[]; tenant?: boolean }[] = [
-    { key: 'platform', email: 'platform@anzelu.io', fullName: 'Platform Operator', role: 'platform_admin', tenant: false },
+    { key: 'platform', email: 'platform@chilimbitso.zm', fullName: 'Platform Operator', role: 'platform_admin', tenant: false },
     { key: 'admin', email: 'admin@demo.zm', fullName: 'Grace Mwansa', role: 'institution_admin' },
     { key: 'officer', email: 'officer@demo.zm', fullName: 'Joseph Banda', role: 'credit_officer', branches: [lsk.id] },
     { key: 'officer2', email: 'officer.copperbelt@demo.zm', fullName: 'Ruth Chileshe', role: 'credit_officer', branches: [ktw.id, ndl.id] },

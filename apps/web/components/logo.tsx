@@ -1,7 +1,7 @@
 import { useId } from "react";
 import { cn } from "@/lib/cn";
 
-/** Anzelu mark: three rising bars (growth, instalments paid down) with a copper keystone. */
+/** Chilimbitso mark: three rising bars (growth, instalments paid down) with a copper keystone. */
 export function LogoMark({ className }: { className?: string }) {
   // Unique per instance: a page may render several marks, some inside display:none.
   // useId may contain ":" or "«»", which break url(#…) references, so keep it to safe characters.
@@ -28,7 +28,7 @@ export function Logo({ className, subtitle, dark }: { className?: string; subtit
     <span className={cn("flex items-center gap-2.5", className)}>
       <LogoMark />
       <span className="min-w-0">
-        <span className={cn("block font-display text-lg font-bold leading-none tracking-tight", dark ? "text-white" : "text-slate-900")}>Anzelu</span>
+        <span className={cn("block font-display text-lg font-bold leading-none tracking-tight", dark ? "text-white" : "text-slate-900")}>Chilimbitso</span>
         {subtitle && <span className={cn("mt-1 block truncate text-[11px] leading-none", dark ? "text-slate-400" : "text-slate-500")}>{subtitle}</span>}
       </span>
     </span>

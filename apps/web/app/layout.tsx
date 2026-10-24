@@ -7,7 +7,7 @@ const display = Plus_Jakarta_Sans({ variable: "--font-jakarta", subsets: ["latin
 const mono = JetBrains_Mono({ variable: "--font-jetbrains", subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: { default: "Anzelu — Loan management", template: "%s · Anzelu" },
+  title: { default: "Chilimbitso — Loan management", template: "%s · Chilimbitso" },
   description: "Multi-tenant loan management for microfinance institutions, SACCOs and digital lenders.",
 };
 

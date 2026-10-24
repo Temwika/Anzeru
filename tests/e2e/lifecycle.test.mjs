@@ -85,7 +85,7 @@ describe('lending lifecycle', () => {
     s.manager = await as('manager@demo.zm');
     s.accountant = await as('accountant@demo.zm');
     s.cashier = await as('cashier@demo.zm');
-    s.platform = await as('platform@anzelu.io');
+    s.platform = await as('platform@chilimbitso.zm');
     const me = await s.officer.get('/auth/me');
     assert.equal(me.data.role, 'credit_officer');
   });

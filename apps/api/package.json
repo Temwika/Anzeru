@@ -2,7 +2,7 @@
   "name": "@anzelu/api",
   "version": "0.1.0",
   "private": true,
-  "description": "Anzelu lending API (NestJS)",
+  "description": "Chilimbitso lending API (NestJS)",
   "main": "dist/main.js",
   "scripts": {
     "build": "tsc -p tsconfig.build.json",

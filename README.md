@@ -1,6 +1,6 @@
-# Anzelu: loan management platform
+# Chilimbitso: loan management platform
 
-Anzelu is a multi-tenant loan management system for Zambian microfinance institutions, SACCOs and digital lenders. It covers the whole loan lifecycle: customer onboarding and KYC, credit assessment, approval, disbursement, repayment, collections, accounting and reporting. Financial controls are enforced by the server and the database, not just the UI.
+Chilimbitso is a multi-tenant loan management system for Zambian microfinance institutions, SACCOs and digital lenders. It covers the whole loan lifecycle: customer onboarding and KYC, credit assessment, approval, disbursement, repayment, collections, accounting and reporting. Financial controls are enforced by the server and the database, not just the UI.
 
 | Layer | Technology |
 |---|---|
@@ -34,7 +34,7 @@ All demo users share one password, defined as `DEMO_PASSWORD` in `apps/api/src/s
 | `cashier@demo.zm` | Cashier | Record repayments, request reversals, collections |
 | `admin@demo.zm` | Institution admin | Products, branches, users, notifications, end-of-day |
 | `auditor@demo.zm` | Auditor | Read-only everything + hash-chain audit verification |
-| `platform@anzelu.io` | Platform operator | Onboard / suspend institutions |
+| `platform@chilimbitso.zm` | Platform operator | Onboard / suspend institutions |
 | `borrower@demo.zm` | Borrower | Self-service portal: balance, schedule, receipts |
 
 ## A full loan in five sign-ins

@@ -18,7 +18,7 @@ async function bootstrap() {
   app.set('trust proxy', 'loopback');
 
   const docs = new DocumentBuilder()
-    .setTitle('Anzelu Lending API')
+    .setTitle('Chilimbitso Lending API')
     .setDescription('Multi-tenant loan management API. All endpoints require a session cookie or bearer token unless marked public.')
     .setVersion('1.0')
     .addCookieAuth('anz_session')

@@ -57,7 +57,7 @@ export default function Home() {
               Lending operations you can <span className="text-brand-400">reconcile to the ngwee.</span>
             </h1>
             <p className="mt-5 max-w-xl text-lg text-slate-300">
-              Anzelu runs the full loan lifecycle for microfinance institutions, SACCOs, salary-based and SME lenders — from
+              Chilimbitso runs the full loan lifecycle for microfinance institutions, SACCOs, salary-based and SME lenders — from
               KYC and credit decisions to mobile-money disbursement, collections and a balanced general ledger.
             </p>
             <div className="mt-8 flex flex-wrap gap-3">
@@ -122,7 +122,7 @@ export default function Home() {
 
       <footer className="border-t border-slate-200 bg-white">
         <div className="mx-auto max-w-6xl px-4 py-8 text-sm text-slate-500 sm:px-6">
-          © 2026 Anzelu · Uplift Services Limited
+          © 2026 Chilimbitso · Uplift Services Limited
         </div>
       </footer>
     </div>
