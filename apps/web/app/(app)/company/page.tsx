@@ -76,7 +76,7 @@ function CompanyForm({ company }: { company: Company }) {
             <input className={inputClass} value={v.name} onChange={set("name")} />
           </Field>
           <Field label="Trading name" hint="The name on your logo" error={errors.tradingName}>
-            <input className={inputClass} value={v.tradingName} onChange={set("tradingName")} placeholder="Chilimbitso Loans" />
+            <input className={inputClass} value={v.tradingName} onChange={set("tradingName")} placeholder="Chilimbitso Money Lending" />
           </Field>
           <Field label="Tagline" error={errors.tagline}>
             <input className={inputClass} value={v.tagline} onChange={set("tagline")} placeholder="Together, We Grow" />

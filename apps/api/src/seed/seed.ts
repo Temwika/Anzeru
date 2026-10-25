@@ -141,7 +141,7 @@ export async function seedDemo(app: INestApplicationContext) {
       code: "DEMO",
       plan: "growth",
       profile: {
-        tradingName: "Chilimbitso Loans",
+        tradingName: "Chilimbitso Money Lending",
         tagline: "Together, We Grow",
         address: "Sinda District, Eastern Province, Zambia",
         phones: "+260 977 700 630 / +260 976 944 665",

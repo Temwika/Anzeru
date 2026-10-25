@@ -8,7 +8,7 @@ export function LogoMark({ className }: { className?: string }) {
 }
 
 /**
- * The full lock-up: emblem with "CHILIMBITSO LOANS" and, optionally, the tagline.
+ * The full lock-up: emblem with "Chilimbitso Money Lending" and, optionally, the tagline.
  * `subtitle` replaces the tagline line (e.g. the institution in the staff app).
  */
 export function Logo({
@@ -31,8 +31,8 @@ export function Logo({
       <span className="min-w-0">
         <span
           className={cn(
-            "block font-display font-extrabold uppercase leading-none tracking-tight",
-            lg ? "text-[22px]" : "text-[17px]",
+            "block font-display font-extrabold leading-none tracking-tight",
+            lg ? "text-[24px]" : "text-[18px]",
             dark ? "text-white" : "text-[#2b130b]",
           )}
         >
@@ -40,12 +40,12 @@ export function Logo({
         </span>
         <span
           className={cn(
-            "mt-0.5 block font-display font-bold uppercase leading-none tracking-[0.18em]",
-            lg ? "text-[13px]" : "text-[11px]",
+            "mt-1 block font-display font-semibold leading-none tracking-wide",
+            lg ? "text-[14px]" : "text-[12px]",
             dark ? "text-brand-300" : "text-brand-600",
           )}
         >
-          Loans
+          Money Lending
         </span>
         {(subtitle || tagline) && (
           <span className={cn("mt-1 block truncate leading-none", lg ? "text-[13px]" : "text-[11px]", dark ? "text-slate-400" : "text-slate-500")}>
