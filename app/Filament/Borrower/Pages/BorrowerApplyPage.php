@@ -51,7 +51,7 @@ class BorrowerApplyPage extends Page implements HasForms
                     Step::make('Amount & Term')
                         ->schema([
                             TextInput::make('amount')
-                                ->label('Loan Amount (MK)')
+                                ->label('Loan Amount (K)')
                                 ->numeric()
                                 ->minValue(1)
                                 ->required(),
@@ -68,15 +68,15 @@ class BorrowerApplyPage extends Page implements HasForms
                                 ->required()
                                 ->rows(2),
                             TextInput::make('monthly_income')
-                                ->label('Monthly Income (MK)')
+                                ->label('Monthly Income (K)')
                                 ->numeric()
                                 ->required(),
                             TextInput::make('monthly_expenses')
-                                ->label('Monthly Expenses (MK)')
+                                ->label('Monthly Expenses (K)')
                                 ->numeric()
                                 ->required(),
                             TextInput::make('existing_debt_repayments')
-                                ->label('Existing Debt Repayments (MK)')
+                                ->label('Existing Debt Repayments (K)')
                                 ->numeric()
                                 ->default(0),
                         ]),

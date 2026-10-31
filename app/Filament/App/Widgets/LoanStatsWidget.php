@@ -22,23 +22,29 @@ class LoanStatsWidget extends StatsOverviewWidget
         $som   = $now->copy()->startOfMonth();
         $total = Loan::where('status', 'active')->count();
 
+        // Sums are read by alias: an unnamed COALESCE(...) column is called "coalesce" only on
+        // PostgreSQL, so on MySQL every total used to come back as zero.
+        $sum = fn ($query, string $expr) => (float) ($query->selectRaw("COALESCE(SUM({$expr}), 0) as total")->value('total') ?? 0);
+        $active = fn ($q) => $q->where('status', 'active');
+
         // Outstanding principal (unpaid)
-        $outstanding = LoanScheduleItem::whereHas('loan', fn ($q) => $q->where('status', 'active'))
-            ->selectRaw('COALESCE(SUM(principal_due - principal_paid), 0)')
-            ->value('coalesce') ?? 0;
+        $outstanding = $sum(LoanScheduleItem::whereHas('loan', $active), 'principal_due - principal_paid');
 
-        // PAR 30 & PAR 90
-        $par30Loans = LoanScheduleItem::whereColumn('principal_paid', '<', 'principal_due')
-            ->where('due_date', '<', $now->copy()->subDays(30))
-            ->whereHas('loan', fn ($q) => $q->where('status', 'active'))
-            ->distinct('loan_id')->count('loan_id');
-        $par90Loans = LoanScheduleItem::whereColumn('principal_paid', '<', 'principal_due')
-            ->where('due_date', '<', $now->copy()->subDays(90))
-            ->whereHas('loan', fn ($q) => $q->where('status', 'active'))
-            ->distinct('loan_id')->count('loan_id');
+        // Portfolio at risk, the industry measure: the whole outstanding principal of every loan
+        // with an instalment more than N days late, as a share of all outstanding principal.
+        $atRisk = function (int $days) use ($now, $active, $sum) {
+            $late = LoanScheduleItem::whereColumn('principal_paid', '<', 'principal_due')
+                ->where('due_date', '<', $now->copy()->subDays($days))
+                ->whereHas('loan', $active)
+                ->distinct()->pluck('loan_id');
 
-        $par30Pct = $total > 0 ? round(($par30Loans / $total) * 100, 1) : 0;
-        $par90Pct = $total > 0 ? round(($par90Loans / $total) * 100, 1) : 0;
+            return [$late->count(), $late->isEmpty() ? 0.0 : $sum(LoanScheduleItem::whereIn('loan_id', $late), 'principal_due - principal_paid')];
+        };
+        [$par30Loans, $par30Amount] = $atRisk(30);
+        [, $par90Amount] = $atRisk(90);
+
+        $par30Pct = $outstanding > 0 ? round(($par30Amount / $outstanding) * 100, 1) : 0;
+        $par90Pct = $outstanding > 0 ? round(($par90Amount / $outstanding) * 100, 1) : 0;
 
         // Loans in arrears (any overdue installment)
         $inArrears = LoanScheduleItem::whereColumn('principal_paid', '<', 'principal_due')
@@ -46,11 +52,10 @@ class LoanStatsWidget extends StatsOverviewWidget
             ->whereHas('loan', fn ($q) => $q->where('status', 'active'))
             ->distinct('loan_id')->count('loan_id');
 
-        $overdueAmount = LoanScheduleItem::whereColumn('principal_paid', '<', 'principal_due')
-            ->where('due_date', '<', $now)
-            ->whereHas('loan', fn ($q) => $q->where('status', 'active'))
-            ->selectRaw('COALESCE(SUM(principal_due + interest_due + penalty_due - principal_paid - interest_paid - penalty_paid), 0)')
-            ->value('coalesce') ?? 0;
+        $overdueAmount = $sum(
+            LoanScheduleItem::whereColumn('principal_paid', '<', 'principal_due')->where('due_date', '<', $now)->whereHas('loan', $active),
+            'principal_due + interest_due + penalty_due - principal_paid - interest_paid - penalty_paid',
+        );
 
         // This month
         $disbursedMonth = LoanDisbursement::where('status', 'completed')
@@ -59,9 +64,7 @@ class LoanStatsWidget extends StatsOverviewWidget
         $collectedMonth = Payment::where('status', 'posted')
             ->whereBetween('received_on', [$som, $now])
             ->sum('amount');
-        $dueMonth = LoanScheduleItem::whereBetween('due_date', [$som, $now])
-            ->selectRaw('COALESCE(SUM(principal_due + interest_due + fee_due), 0)')
-            ->value('coalesce') ?? 0;
+        $dueMonth = $sum(LoanScheduleItem::whereBetween('due_date', [$som, $now]), 'principal_due + interest_due + fee_due');
 
         $efficiency = $dueMonth > 0 ? min(200, round(($collectedMonth / $dueMonth) * 100, 1)) : null;
 
@@ -96,7 +99,7 @@ class LoanStatsWidget extends StatsOverviewWidget
                 ->icon('heroicon-o-arrow-up-right'),
 
             Stat::make('PAR 30', "{$par30Pct}%")
-                ->description("PAR 90: {$par90Pct}% · {$par30Loans} loans")
+                ->description("{$fmt($par30Amount)} at risk · {$par30Loans} loans · PAR 90: {$par90Pct}%")
                 ->color($par30Pct > 10 ? 'danger' : ($par30Pct > 5 ? 'warning' : 'success'))
                 ->icon('heroicon-o-exclamation-triangle'),
         ];

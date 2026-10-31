@@ -47,6 +47,7 @@ class Branding
             ->darkMode(true)
             ->sidebarCollapsibleOnDesktop()
             ->globalSearchKeyBindings(['mod+k', 'ctrl+k'])
-            ->renderHook(PanelsRenderHook::HEAD_END, fn () => view('filament.theme'));
+            ->renderHook(PanelsRenderHook::HEAD_END, fn () => view('filament.theme'))
+            ->renderHook(PanelsRenderHook::BODY_END, fn () => view('filament.idle-lock'));
     }
 }
