@@ -254,7 +254,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   }
 
   const nav = (
-    <nav className="scroll-quiet flex-1 space-y-5 overflow-y-auto px-3 py-4">
+    <nav className="scroll-quiet flex-1 space-y-5 overflow-y-auto overflow-x-hidden px-3 py-4">
       {isLoading
         ? Array.from({ length: 7 }, (_, i) => <div key={i} className="h-9 animate-pulse rounded-lg bg-white/5" />)
         : sections.map((s) => (
