@@ -1,7 +1,8 @@
 "use client";
 
 import type { SessionUser } from "@anzelu/contracts";
-import { useQuery, type UseQueryOptions } from "@tanstack/react-query";
+import { useQuery, type UseQueryOptions, type UseQueryResult } from "@tanstack/react-query";
+import { useSyncExternalStore } from "react";
 
 export class ApiError extends Error {
   constructor(
@@ -53,12 +54,45 @@ export const api = {
   delete: <T>(path: string) => request<T>(path, { method: "DELETE" }),
 };
 
+const noSubscription = () => () => {};
+
+/** False while rendering on the server and during hydration; true on every render after that, including later mounts. */
+export function useHydrated() {
+  return useSyncExternalStore(noSubscription, () => true, () => false);
+}
+
+/**
+ * The server never has query data, but a page that hydrates after the shell has fetched (the session,
+ * task counts) would find it in the cache and render differently, e.g. a permission-gated button.
+ * Until hydration is done, report the same empty, idle state the server rendered.
+ */
+function hydrationSafe<R extends UseQueryResult<unknown>>(result: R, hydrated: boolean): R {
+  if (hydrated) return result;
+  return {
+    ...result,
+    data: undefined,
+    error: null,
+    status: "pending",
+    fetchStatus: "idle",
+    isPending: true,
+    isLoading: false,
+    isFetching: false,
+    isSuccess: false,
+    isError: false,
+  } as R;
+}
+
 export function useApi<T>(path: string | null, options?: Omit<UseQueryOptions<T>, "queryKey" | "queryFn">) {
-  return useQuery<T>({ queryKey: [path], queryFn: () => api.get<T>(path!), enabled: !!path, ...options });
+  const hydrated = useHydrated();
+  return hydrationSafe(useQuery<T>({ queryKey: [path], queryFn: () => api.get<T>(path!), enabled: !!path, ...options }), hydrated);
 }
 
 export function usePage<T>(path: string | null) {
-  return useQuery<Page<T>>({ queryKey: ["page", path], queryFn: () => api.page<T>(path!), enabled: !!path, placeholderData: (prev) => prev });
+  const hydrated = useHydrated();
+  return hydrationSafe(
+    useQuery<Page<T>>({ queryKey: ["page", path], queryFn: () => api.page<T>(path!), enabled: !!path, placeholderData: (prev) => prev }),
+    hydrated,
+  );
 }
 
 export function useSession() {
