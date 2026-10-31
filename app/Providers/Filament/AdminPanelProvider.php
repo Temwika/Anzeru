@@ -30,6 +30,8 @@ class AdminPanelProvider extends PanelProvider
             ->login()
             ->colors(['primary' => Color::Emerald])
             ->brandName('Chilimbitso')
+            ->renderHook('panels::head.end', fn () => view('filament.head-extras'))
+            ->renderHook('panels::body.end', fn () => view('filament.body-extras'))
             ->discoverResources(in: app_path('Filament/App/Resources'), for: 'App\\Filament\\App\\Resources')
             ->discoverPages(in: app_path('Filament/App/Pages'), for: 'App\\Filament\\App\\Pages')
             ->discoverWidgets(in: app_path('Filament/App/Widgets'), for: 'App\\Filament\\App\\Widgets')
