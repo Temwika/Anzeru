@@ -1,6 +1,7 @@
 import { Suspense } from "react";
 import { BorrowerHeader, BorrowerTabBar } from "./header";
 import { Providers } from "@/components/providers";
+import { ConnectionBanner } from "@/components/pwa";
 import { Skeleton } from "@/components/ui";
 
 export const metadata = { title: "My loans" };
@@ -18,6 +19,7 @@ export default function BorrowerLayout({ children }: { children: React.ReactNode
         <Suspense>
           <BorrowerTabBar />
         </Suspense>
+        <ConnectionBanner />
       </div>
     </Providers>
   );

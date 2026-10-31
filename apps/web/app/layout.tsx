@@ -10,6 +10,9 @@ const mono = JetBrains_Mono({ variable: "--font-jetbrains", subsets: ["latin"] }
 export const metadata: Metadata = {
   title: { default: "Chilimbitso — Loan management", template: "%s · Chilimbitso" },
   description: "Multi-tenant loan management for microfinance institutions, SACCOs and digital lenders.",
+  applicationName: "Chilimbitso",
+  icons: { apple: "/icons/apple-touch-icon.png" },
+  appleWebApp: { capable: true, title: "Chilimbitso", statusBarStyle: "black-translucent" },
 };
 
 export const viewport: Viewport = { themeColor: "#1c100b" };

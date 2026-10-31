@@ -29,6 +29,7 @@ import {
   ChevronRight,
   HandCoins,
   KeyRound,
+  Keyboard,
   Landmark,
   LayoutDashboard,
   LogOut,
@@ -46,10 +47,12 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { cn } from "@/lib/cn";
 import { api, useApi, useSession } from "@/lib/api";
 import { CommandPalette, type PaletteLink } from "./command-palette";
+import { ConnectionBanner, InstallAppItem } from "./pwa";
+import { ShortcutsHelp, useShortcuts } from "./shortcuts";
 import { Logo, LogoMark } from "./logo";
 import { ThemeSegmented, ThemeToggle } from "./theme";
 import { useToast } from "./toast";
@@ -202,6 +205,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const drawer = drawerAt === pathname;
   const setDrawer = (on: boolean) => setDrawerAt(on ? pathname : null);
   const [palette, setPalette] = useState(false);
+  const [help, setHelp] = useState(false);
+  const openHelp = useCallback(() => setHelp(true), []);
+  useShortcuts(user, { onHelp: openHelp });
   const { data: tasks } = useApi<Tasks>(user && user.role !== "platform_admin" ? "/reports/tasks" : null, { refetchInterval: 30_000 });
   useNewApplicantAlert(tasks);
 
@@ -264,12 +270,22 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     </nav>
   );
 
-  const sidebar = (
+  // The header grows with the three-line lock-up; in the drawer the close button sits beside it, not over it.
+  const sidebar = (onClose?: () => void) => (
     <>
-      <div className="flex h-16 items-center px-5">
-        <Link href={user?.role === "platform_admin" ? "/admin/tenants" : "/dashboard"}>
+      <div className="flex min-h-16 shrink-0 items-center gap-3 border-b border-white/[0.06] py-3.5 pl-5 pr-3">
+        <Link href={user?.role === "platform_admin" ? "/admin/tenants" : "/dashboard"} className="min-w-0 flex-1">
           <Logo dark subtitle={user ? (user.role === "platform_admin" ? "Platform console" : ROLE_LABELS[user.role]) : " "} />
         </Link>
+        {onClose && (
+          <button
+            onClick={onClose}
+            className="grid size-9 shrink-0 place-items-center rounded-xl text-slate-400 transition hover:bg-white/10 hover:text-white active:scale-95"
+            aria-label="Close menu"
+          >
+            <X className="size-5" />
+          </button>
+        )}
       </div>
       {nav}
       {system.length > 0 && (
@@ -287,21 +303,14 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   return (
     <div className="min-h-screen">
       <aside className="fixed inset-y-0 left-0 z-30 hidden w-64 flex-col overflow-hidden bg-ink-950 dark:border-r dark:border-white/[0.06] bg-[radial-gradient(420px_260px_at_0%_0%,rgb(242_107_29/0.14),transparent_70%)] lg:flex">
-        {sidebar}
+        {sidebar()}
       </aside>
 
       {drawer && (
         <div className="fixed inset-0 z-40 lg:hidden">
           <div className="absolute inset-0 animate-fade-in bg-ink-950/60" onClick={() => setDrawer(false)} />
-          <aside className="absolute inset-y-0 left-0 flex w-72 animate-slide-in-left flex-col bg-ink-950">
-            <button
-              onClick={() => setDrawer(false)}
-              className="absolute right-3 top-4 rounded-md p-1.5 text-slate-400 hover:text-white"
-              aria-label="Close menu"
-            >
-              <X className="size-5" />
-            </button>
-            {sidebar}
+          <aside className="absolute inset-y-0 left-0 flex w-72 max-w-[85vw] animate-slide-in-left flex-col bg-ink-950 bg-[radial-gradient(420px_260px_at_0%_0%,rgb(242_107_29/0.14),transparent_70%)] pb-[env(safe-area-inset-bottom)] pt-[env(safe-area-inset-top)]">
+            {sidebar(() => setDrawer(false))}
           </aside>
         </div>
       )}
@@ -345,7 +354,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             {user && <QuickCreate user={user} />}
             <ThemeToggle className="hidden sm:grid" />
             {user && user.role !== "platform_admin" && <Inbox tasks={tasks} user={user} />}
-            {user ? <UserMenu user={user} onLogout={logout} /> : <Skeleton className="size-9 rounded-full" />}
+            {user ? <UserMenu user={user} onLogout={logout} onShortcuts={openHelp} /> : <Skeleton className="size-9 rounded-full" />}
           </div>
         </header>
         <main
@@ -362,6 +371,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       {tabBar && user && <TabBar user={user} tasks={tasks} pathname={pathname} onSearch={() => setPalette(true)} onMenu={() => setDrawer(true)} />}
 
       {user && palette && <CommandPalette onClose={() => setPalette(false)} user={user} pages={PAGES} />}
+      {user && <ShortcutsHelp open={help} onClose={() => setHelp(false)} user={user} />}
+      <ConnectionBanner />
     </div>
   );
 }
@@ -754,7 +765,7 @@ function Inbox({ tasks, user }: { tasks?: Tasks; user: SessionUser }) {
   );
 }
 
-function UserMenu({ user, onLogout }: { user: SessionUser; onLogout: () => void }) {
+function UserMenu({ user, onLogout, onShortcuts }: { user: SessionUser; onLogout: () => void; onShortcuts: () => void }) {
   return (
     <Popover label="Account" trigger={() => <Avatar name={user.fullName} className="ring-2 ring-white transition hover:ring-brand-100" />}>
       {(close) => (
@@ -777,6 +788,20 @@ function UserMenu({ user, onLogout }: { user: SessionUser; onLogout: () => void 
               Security &amp; two-factor
               {!user.mfaEnabled && <span className="ml-auto rounded-full bg-amber-100 px-2 py-0.5 text-[11px] font-medium text-amber-800">Off</span>}
             </Link>
+            <button
+              onClick={() => {
+                close();
+                onShortcuts();
+              }}
+              className="flex w-full items-center gap-3 px-4 py-2.5 text-sm text-slate-700 hover:bg-slate-50 max-lg:hidden"
+            >
+              <Keyboard className="size-4 text-slate-400" />
+              Keyboard shortcuts
+              <span className="ml-auto">
+                <Kbd>?</Kbd>
+              </span>
+            </button>
+            <InstallAppItem onDone={close} />
             <button onClick={onLogout} className="flex w-full items-center gap-3 px-4 py-2.5 text-sm text-slate-700 hover:bg-slate-50">
               <LogOut className="size-4 text-slate-400" />
               Sign out
