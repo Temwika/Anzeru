@@ -41,7 +41,7 @@ class JournalEntryResource extends Resource
                         DatePicker::make('from'),
                         DatePicker::make('until'),
                     ])
-                    ->query(fn ($q, array $data) => $q
+                    ->query(fn ($query, array $data) => $query
                         ->when($data['from'],  fn ($q, $v) => $q->whereDate('entry_date', '>=', $v))
                         ->when($data['until'], fn ($q, $v) => $q->whereDate('entry_date', '<=', $v))
                     ),
