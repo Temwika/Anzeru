@@ -197,7 +197,10 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
   const queryClient = useQueryClient();
-  const [drawer, setDrawer] = useState(false);
+  // Each overlay remembers the page it was opened on, so navigating away closes it without an effect.
+  const [drawerAt, setDrawerAt] = useState<string | null>(null);
+  const drawer = drawerAt === pathname;
+  const setDrawer = (on: boolean) => setDrawerAt(on ? pathname : null);
   const [palette, setPalette] = useState(false);
   const { data: tasks } = useApi<Tasks>(user && user.role !== "platform_admin" ? "/reports/tasks" : null, { refetchInterval: 30_000 });
   useNewApplicantAlert(tasks);
@@ -210,7 +213,6 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
-  useEffect(() => setDrawer(false), [pathname]);
   useEffect(() => {
     if (user?.role === "borrower") router.replace("/borrower");
   }, [user, router]);
@@ -359,7 +361,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
       {tabBar && user && <TabBar user={user} tasks={tasks} pathname={pathname} onSearch={() => setPalette(true)} onMenu={() => setDrawer(true)} />}
 
-      {user && <CommandPalette open={palette} onClose={() => setPalette(false)} user={user} pages={PAGES} />}
+      {user && palette && <CommandPalette onClose={() => setPalette(false)} user={user} pages={PAGES} />}
     </div>
   );
 }
@@ -594,14 +596,15 @@ function Popover({
   align?: "right" | "left";
   label: string;
 }) {
-  const [open, setOpen] = useState(false);
-  const ref = useRef<HTMLDivElement>(null);
   const pathname = usePathname();
-  useEffect(() => setOpen(false), [pathname]);
+  const [openAt, setOpenAt] = useState<string | null>(null);
+  const open = openAt === pathname;
+  const setOpen = (on: boolean) => setOpenAt(on ? pathname : null);
+  const ref = useRef<HTMLDivElement>(null);
   useEffect(() => {
     if (!open) return;
-    const onDown = (e: MouseEvent) => ref.current && !ref.current.contains(e.target as Node) && setOpen(false);
-    const onKey = (e: KeyboardEvent) => e.key === "Escape" && setOpen(false);
+    const onDown = (e: MouseEvent) => ref.current && !ref.current.contains(e.target as Node) && setOpenAt(null);
+    const onKey = (e: KeyboardEvent) => e.key === "Escape" && setOpenAt(null);
     document.addEventListener("mousedown", onDown);
     document.addEventListener("keydown", onKey);
     return () => {
@@ -611,7 +614,7 @@ function Popover({
   }, [open]);
   return (
     <div ref={ref} className="relative">
-      <button onClick={() => setOpen((o) => !o)} aria-expanded={open} aria-haspopup="menu" aria-label={label} className="block">
+      <button onClick={() => setOpen(!open)} aria-expanded={open} aria-haspopup="menu" aria-label={label} className="block">
         {trigger(open)}
       </button>
       {open && (

@@ -35,7 +35,9 @@ async function request<T>(path: string, init: RequestInit = {}, paged = false): 
   const json = await res.json().catch(() => null);
   if (!res.ok) {
     if (res.status === 401 && typeof window !== "undefined" && !path.startsWith("/auth/login")) {
-      window.location.href = `/login?next=${encodeURIComponent(window.location.pathname)}`;
+      // A full page load on purpose: an expired session must drop every cached query, and this
+      // helper runs outside React, where there is no router.
+      window.location.href = `/login?next=${encodeURIComponent(window.location.pathname)}`; // eslint-disable-line @next/next/no-location-assign-relative-destination
     }
     const e = json?.error ?? {};
     throw new ApiError(e.message ?? `Request failed (${res.status})`, res.status, e.code ?? "ERROR", e.details, json?.meta?.requestId);

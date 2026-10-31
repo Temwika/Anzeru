@@ -1,4 +1,5 @@
 import { BadgeCheck, Landmark, ShieldCheck } from "lucide-react";
+import Link from "next/link";
 import { Suspense } from "react";
 import { Logo } from "@/components/logo";
 import { ThemeToggle } from "@/components/theme";
@@ -21,9 +22,9 @@ export default function LoginPage() {
         <div className="pointer-events-none absolute -bottom-48 right-0 size-[460px] animate-float rounded-full bg-copper-500/15 blur-3xl [animation-delay:-3.5s]" />
         <div className="grain pointer-events-none absolute inset-0 opacity-[0.06]" />
 
-        <a href="/" className="relative">
+        <Link href="/" className="relative">
           <Logo dark subtitle="Loan management platform" />
-        </a>
+        </Link>
 
         <div className="relative max-w-lg">
           <p className="font-display text-[40px] font-bold leading-[1.1]">

@@ -23,7 +23,7 @@ import {
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
-import { useFieldArray, useForm } from "react-hook-form";
+import { useFieldArray, useForm, useWatch } from "react-hook-form";
 import type { z } from "zod";
 import { PhotoCapture } from "@/components/photo-capture";
 import { SignaturePad } from "@/components/signature-pad";
@@ -90,7 +90,7 @@ export default function NewApplicationPage() {
   const [step, setStep] = useState(0);
   const [error, setError] = useState<string | null>(null);
   const [stepError, setStepError] = useState<string | null>(null);
-  const [quote, setQuote] = useState<Schedule | null>(null);
+  const [lastQuote, setLastQuote] = useState<Schedule | null>(null);
   const [gFiles, setGFiles] = useState<GuarantorFiles>({});
   const [cPhotos, setCPhotos] = useState<Record<string, File | null>>({});
   const [consent, setConsent] = useState(false);
@@ -100,7 +100,6 @@ export default function NewApplicationPage() {
   const {
     register,
     handleSubmit,
-    watch,
     control,
     setValue,
     trigger,
@@ -113,18 +112,13 @@ export default function NewApplicationPage() {
   });
   const guarantors = useFieldArray({ control, name: "guarantors" });
   const collateral = useFieldArray({ control, name: "collateral" });
-  const [customerId, productId, amount, term, income, expenses, debt, borrowerSignature] = watch([
-    "customerId",
-    "productId",
-    "amount",
-    "term",
-    "monthlyIncome",
-    "monthlyExpenses",
-    "existingDebtRepayments",
-    "borrowerSignature",
-  ]);
-  const gValues = watch("guarantors");
-  const cValues = watch("collateral");
+  // useWatch rather than watch(): subscriptions the React Compiler can optimise.
+  const [customerId, productId, amount, term, income, expenses, debt, borrowerSignature] = useWatch({
+    control,
+    name: ["customerId", "productId", "amount", "term", "monthlyIncome", "monthlyExpenses", "existingDebtRepayments", "borrowerSignature"],
+  });
+  const gValues = useWatch({ control, name: "guarantors" });
+  const cValues = useWatch({ control, name: "collateral" });
   const product = products?.find((p) => p.id === productId);
   const { data: customer, refetch: refetchCustomer } = useApi<CustomerDetail>(customerId ? `/customers/${customerId}` : null);
   const clientNrc = customer?.documents.find((d) => d.docType === "nrc");
@@ -141,7 +135,7 @@ export default function NewApplicationPage() {
   }, [product, setValue]);
 
   useEffect(() => {
-    if (!product || !amount || !term) return setQuote(null);
+    if (!product || !amount || !term) return;
     const ctrl = new AbortController();
     const t = setTimeout(() => {
       fetch("/api/quote", {
@@ -158,7 +152,7 @@ export default function NewApplicationPage() {
         signal: ctrl.signal,
       })
         .then((r) => r.json())
-        .then((j) => setQuote(j.data ?? null))
+        .then((j) => setLastQuote(j.data ?? null))
         .catch(() => undefined);
     }, 250);
     return () => {
@@ -166,6 +160,10 @@ export default function NewApplicationPage() {
       ctrl.abort();
     };
   }, [product, amount, term]);
+  // The last quote stays up while a new one loads, but is dropped the moment the loan details are
+  // incomplete, so figures for old inputs never reappear. Resetting during render, not in an effect.
+  if (!(product && amount && term) && lastQuote) setLastQuote(null);
+  const quote = lastQuote;
 
   const monthlyInstalment = quote && product ? (Number(quote.installmentAmount) * PERIODS_PER_YEAR[product.repaymentFrequency]) / 12 : 0;
   const dti = Number(income) > 0 && quote ? ((monthlyInstalment + Number(debt || 0)) / Number(income)) * 100 : null;

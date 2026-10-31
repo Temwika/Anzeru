@@ -19,11 +19,11 @@ import {
   Wallet,
 } from "lucide-react";
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useMemo } from "react";
 import { AgeingBar, GroupedBarChart } from "@/components/charts";
 import { AnimatedValue, trackSpotlight } from "@/components/motion";
 import { Avatar, Card, CardHeader, ErrorState, ProgressBar, Skeleton, StatCard, StatusBadge, Table, Td, Th } from "@/components/ui";
-import { usePage, useApi, useSession } from "@/lib/api";
+import { usePage, useApi, useHydrated, useSession } from "@/lib/api";
 import { cn } from "@/lib/cn";
 import { kwacha, pct, shortDate } from "@/lib/format";
 
@@ -132,9 +132,9 @@ function nextActions(user: SessionUser, tasks?: Tasks, d?: Dashboard): Action[] 
 export default function DashboardPage() {
   const { data: user } = useSession();
   const { data, isLoading, error, refetch } = useApi<Dashboard>("/reports/dashboard");
-  // Clock- and session-dependent text renders after mount so server and client markup match.
-  const [now, setNow] = useState<Date | null>(null);
-  useEffect(() => setNow(new Date()), []);
+  // Clock- and session-dependent text renders after hydration so server and client markup match.
+  const hydrated = useHydrated();
+  const now = useMemo(() => (hydrated ? new Date() : null), [hydrated]);
   const { data: tasks } = useApi<Tasks>("/reports/tasks");
   const firstName = now ? user?.fullName.split(" ")[0] : undefined;
   const efficiency = data?.kpis.collectionEfficiencyPct ? Number(data.kpis.collectionEfficiencyPct) : null;

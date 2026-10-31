@@ -33,31 +33,28 @@ const CREATE: PaletteLink[] = [
 ];
 
 /** ⌘K / Ctrl+K: jump to any customer, loan or application, page, or common action. */
-export function CommandPalette({ open, onClose, user, pages }: { open: boolean; onClose: () => void; user: SessionUser; pages: PaletteLink[] }) {
+/** Mounted only while open, so every opening starts with an empty query. */
+export function CommandPalette({ onClose, user, pages }: { onClose: () => void; user: SessionUser; pages: PaletteLink[] }) {
   const router = useRouter();
   const input = useRef<HTMLInputElement>(null);
   const [q, setQ] = useState("");
-  const [records, setRecords] = useState<Item[]>([]);
-  const [loading, setLoading] = useState(false);
+  // Results remember the term they answer, so a stale or too-short query simply shows none.
+  const [found, setFound] = useState<{ term: string; items: Item[] } | null>(null);
   const [active, setActive] = useState(0);
   const can = (p?: Permission) => !p || user.permissions.includes(p);
+  const term = q.trim();
+  const searchable = term.length >= 2;
+  const records = searchable && found?.term === term ? found.items : [];
+  const loading = searchable && found?.term !== term;
 
   useEffect(() => {
-    if (!open) return;
-    setQ("");
-    setRecords([]);
-    setActive(0);
-    setTimeout(() => input.current?.focus(), 10);
-  }, [open]);
+    const t = setTimeout(() => input.current?.focus(), 10);
+    return () => clearTimeout(t);
+  }, []);
 
   useEffect(() => {
-    const term = q.trim();
-    if (term.length < 2) {
-      setRecords([]);
-      return;
-    }
+    if (!searchable) return;
     let cancelled = false;
-    setLoading(true);
     const t = setTimeout(async () => {
       const search = qs({ search: term, pageSize: 5 });
       const [customers, loans, apps] = await Promise.all([
@@ -66,7 +63,9 @@ export function CommandPalette({ open, onClose, user, pages }: { open: boolean; 
         can("applications:read") ? api.page<{ id: string; applicationNumber: string; customerName: string; status: string; amount: string }>(`/applications${search}`).catch(() => null) : null,
       ]);
       if (cancelled) return;
-      setRecords([
+      setFound({
+        term,
+        items: [
         ...(customers?.items ?? []).map((c) => ({
           key: `c${c.id}`,
           group: "Borrowers",
@@ -94,15 +93,15 @@ export function CommandPalette({ open, onClose, user, pages }: { open: boolean; 
           icon: BookOpenCheck,
           status: a.status,
         })),
-      ]);
-      setLoading(false);
+        ],
+      });
     }, 220);
     return () => {
       cancelled = true;
       clearTimeout(t);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [q]);
+  }, [term]);
 
   const items = useMemo((): Item[] => {
     const term = q.trim().toLowerCase();
@@ -113,9 +112,8 @@ export function CommandPalette({ open, onClose, user, pages }: { open: boolean; 
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [q, records, pages]);
 
-  useEffect(() => setActive(0), [items.length]);
-
-  if (!open) return null;
+  // Typing resets the highlight to the top; the list can still shrink as results land, so clamp.
+  const current = Math.min(active, Math.max(0, items.length - 1));
 
   const go = (i: Item | undefined) => {
     if (!i) return;
@@ -126,13 +124,13 @@ export function CommandPalette({ open, onClose, user, pages }: { open: boolean; 
   const onKey = (e: React.KeyboardEvent) => {
     if (e.key === "ArrowDown") {
       e.preventDefault();
-      setActive((a) => Math.min(items.length - 1, a + 1));
+      setActive(Math.min(items.length - 1, current + 1));
     } else if (e.key === "ArrowUp") {
       e.preventDefault();
-      setActive((a) => Math.max(0, a - 1));
+      setActive(Math.max(0, current - 1));
     } else if (e.key === "Enter") {
       e.preventDefault();
-      go(items[active]);
+      go(items[current]);
     } else if (e.key === "Escape") onClose();
   };
 
@@ -146,7 +144,10 @@ export function CommandPalette({ open, onClose, user, pages }: { open: boolean; 
           <input
             ref={input}
             value={q}
-            onChange={(e) => setQ(e.target.value)}
+            onChange={(e) => {
+              setQ(e.target.value);
+              setActive(0);
+            }}
             onKeyDown={onKey}
             placeholder="Search customers, NRC, phone, loan or application number…"
             className="h-14 flex-1 bg-transparent text-[15px] text-slate-900 outline-none placeholder:text-slate-400"
@@ -156,7 +157,7 @@ export function CommandPalette({ open, onClose, user, pages }: { open: boolean; 
         </div>
         <ul className="scroll-quiet max-h-[52vh] overflow-y-auto p-2" role="listbox">
           {items.length === 0 && (
-            <li className="px-4 py-10 text-center text-sm text-slate-500">{q.trim().length < 2 ? "Type at least two characters to search records." : loading ? "Searching…" : `No results for “${q}”.`}</li>
+            <li className="px-4 py-10 text-center text-sm text-slate-500">{!searchable ? "Type at least two characters to search records." : loading ? "Searching…" : `No results for “${q}”.`}</li>
           )}
           {items.map((i, idx) => {
             const header = i.group !== lastGroup ? i.group : null;
@@ -166,12 +167,12 @@ export function CommandPalette({ open, onClose, user, pages }: { open: boolean; 
                 {header && <p className="px-3 pb-1 pt-3 text-[11px] font-semibold uppercase tracking-wider text-slate-400">{header}</p>}
                 <button
                   role="option"
-                  aria-selected={idx === active}
+                  aria-selected={idx === current}
                   onMouseEnter={() => setActive(idx)}
                   onClick={() => go(i)}
-                  className={cn("flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left transition", idx === active ? "bg-brand-50" : "")}
+                  className={cn("flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left transition", idx === current ? "bg-brand-50" : "")}
                 >
-                  <span className={cn("grid size-8 shrink-0 place-items-center rounded-lg", idx === active ? "bg-white text-brand-700 shadow-card" : "bg-slate-100 text-slate-500")}>
+                  <span className={cn("grid size-8 shrink-0 place-items-center rounded-lg", idx === current ? "bg-white text-brand-700 shadow-card" : "bg-slate-100 text-slate-500")}>
                     <i.icon className="size-4" />
                   </span>
                   <span className="min-w-0 flex-1">
@@ -179,7 +180,7 @@ export function CommandPalette({ open, onClose, user, pages }: { open: boolean; 
                     {i.sub && <span className="block truncate text-xs text-slate-500">{i.sub}</span>}
                   </span>
                   {i.status && <StatusBadge status={i.status} />}
-                  {idx === active && <ArrowRight className="size-4 text-brand-600" />}
+                  {idx === current && <ArrowRight className="size-4 text-brand-600" />}
                 </button>
               </li>
             );
