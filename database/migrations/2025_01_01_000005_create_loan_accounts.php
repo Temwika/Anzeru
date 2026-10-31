@@ -8,7 +8,7 @@ return new class extends Migration {
     public function up(): void
     {
         Schema::create('loans', function (Blueprint $table) {
-            $table->uuid('id')->primary()->default(DB::raw('gen_random_uuid()'));
+            $table->uuid('id')->primary();
             $table->foreignUuid('tenant_id')->constrained('tenants');
             $table->foreignUuid('branch_id')->constrained('branches');
             $table->string('loan_number', 20);
@@ -28,15 +28,15 @@ return new class extends Migration {
             $table->enum('status', ['pending_disbursement', 'active', 'closed', 'written_off'])->default('pending_disbursement');
             $table->date('disbursed_on')->nullable();
             $table->date('maturity_date')->nullable();
-            $table->timestampTz('closed_at')->nullable();
-            $table->timestampTz('created_at')->useCurrent();
+            $table->timestamp('closed_at')->nullable();
+            $table->timestamp('created_at')->useCurrent();
             $table->unique(['tenant_id', 'loan_number'], 'loans_tenant_number_uq');
             $table->index(['tenant_id', 'status'], 'loans_status_idx');
             $table->index(['tenant_id', 'customer_id'], 'loans_customer_idx');
         });
 
         Schema::create('loan_schedule_items', function (Blueprint $table) {
-            $table->uuid('id')->primary()->default(DB::raw('gen_random_uuid()'));
+            $table->uuid('id')->primary();
             $table->foreignUuid('tenant_id')->constrained('tenants');
             $table->foreignUuid('loan_id')->constrained('loans');
             $table->integer('installment_no');
@@ -49,7 +49,7 @@ return new class extends Migration {
             $table->decimal('interest_paid', 18, 2)->default(0);
             $table->decimal('fee_paid', 18, 2)->default(0);
             $table->decimal('penalty_paid', 18, 2)->default(0);
-            $table->timestampTz('penalty_applied_at')->nullable();
+            $table->timestamp('penalty_applied_at')->nullable();
             $table->unique(['loan_id', 'installment_no'], 'schedule_loan_installment_uq');
             $table->index(['tenant_id', 'due_date'], 'schedule_due_idx');
         });
@@ -57,7 +57,7 @@ return new class extends Migration {
         DB::statement('ALTER TABLE loan_schedule_items ADD CONSTRAINT schedule_paid_not_negative CHECK (principal_paid >= 0 AND interest_paid >= 0 AND fee_paid >= 0 AND penalty_paid >= 0)');
 
         Schema::create('loan_disbursements', function (Blueprint $table) {
-            $table->uuid('id')->primary()->default(DB::raw('gen_random_uuid()'));
+            $table->uuid('id')->primary();
             $table->foreignUuid('tenant_id')->constrained('tenants');
             $table->foreignUuid('loan_id')->constrained('loans');
             $table->decimal('amount', 18, 2);
@@ -70,9 +70,9 @@ return new class extends Migration {
             $table->string('provider_ref')->nullable();
             $table->text('note')->nullable();
             $table->uuid('requested_by');
-            $table->timestampTz('requested_at')->useCurrent();
+            $table->timestamp('requested_at')->useCurrent();
             $table->uuid('decided_by')->nullable();
-            $table->timestampTz('decided_at')->nullable();
+            $table->timestamp('decided_at')->nullable();
             $table->uuid('journal_entry_id')->nullable();
         });
     }

@@ -8,24 +8,24 @@ return new class extends Migration {
     public function up(): void
     {
         Schema::create('tenants', function (Blueprint $table) {
-            $table->uuid('id')->primary()->default(DB::raw('gen_random_uuid()'));
+            $table->uuid('id')->primary();
             $table->string('name');
             $table->string('code', 12)->unique();
             $table->char('currency', 3)->default('ZMW');
             $table->string('timezone')->default('Africa/Lusaka');
             $table->string('plan')->default('starter');
             $table->string('status')->default('active');
-            $table->jsonb('profile')->default('{}');
-            $table->timestampTz('created_at')->useCurrent();
+            $table->json('profile')->nullable();
+            $table->timestamp('created_at')->useCurrent();
         });
 
         Schema::create('branches', function (Blueprint $table) {
-            $table->uuid('id')->primary()->default(DB::raw('gen_random_uuid()'));
+            $table->uuid('id')->primary();
             $table->foreignUuid('tenant_id')->constrained('tenants');
             $table->string('name');
             $table->string('code', 8);
             $table->text('address')->nullable();
-            $table->timestampTz('created_at')->useCurrent();
+            $table->timestamp('created_at')->useCurrent();
             $table->unique(['tenant_id', 'code'], 'branches_tenant_code_uq');
         });
 

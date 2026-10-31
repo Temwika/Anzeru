@@ -8,7 +8,7 @@ return new class extends Migration {
     public function up(): void
     {
         Schema::create('users', function (Blueprint $table) {
-            $table->uuid('id')->primary()->default(DB::raw('gen_random_uuid()'));
+            $table->uuid('id')->primary();
             $table->foreignUuid('tenant_id')->nullable()->constrained('tenants');
             $table->string('email')->unique();
             $table->string('password_hash');
@@ -21,11 +21,11 @@ return new class extends Migration {
             $table->uuid('customer_id')->nullable();
             $table->boolean('is_active')->default(true);
             $table->integer('failed_logins')->default(0);
-            $table->timestampTz('locked_until')->nullable();
+            $table->timestamp('locked_until')->nullable();
             $table->text('mfa_secret')->nullable();
             $table->boolean('mfa_enabled')->default(false);
-            $table->timestampTz('last_login_at')->nullable();
-            $table->timestampTz('created_at')->useCurrent();
+            $table->timestamp('last_login_at')->nullable();
+            $table->timestamp('created_at')->useCurrent();
             $table->index('tenant_id', 'users_tenant_idx');
             $table->rememberToken();
         });

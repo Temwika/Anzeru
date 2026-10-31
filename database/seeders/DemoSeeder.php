@@ -58,7 +58,7 @@ class DemoSeeder extends Seeder
 
     public function run(): void
     {
-        DB::statement('SET session_replication_role = replica'); // disable FK checks temporarily
+        DB::statement('SET FOREIGN_KEY_CHECKS=0');
 
         $ph = Hash::make(self::PASSWORD);
 
@@ -174,7 +174,7 @@ class DemoSeeder extends Seeder
             $customers[] = $custId;
         }
 
-        DB::statement('SET session_replication_role = DEFAULT');
+        DB::statement('SET FOREIGN_KEY_CHECKS=1');
 
         // --- Loans, disbursements, payments ---
         [$appCount, $loanCount, $payCount] = $this->seedLoans(

@@ -8,7 +8,7 @@ return new class extends Migration {
     public function up(): void
     {
         Schema::create('loan_products', function (Blueprint $table) {
-            $table->uuid('id')->primary()->default(DB::raw('gen_random_uuid()'));
+            $table->uuid('id')->primary();
             $table->foreignUuid('tenant_id')->constrained('tenants');
             $table->string('name');
             $table->string('code', 16);
@@ -27,12 +27,12 @@ return new class extends Migration {
             $table->boolean('requires_guarantor')->default(false);
             $table->boolean('requires_collateral')->default(false);
             $table->boolean('is_active')->default(true);
-            $table->timestampTz('created_at')->useCurrent();
+            $table->timestamp('created_at')->useCurrent();
             $table->unique(['tenant_id', 'code'], 'loan_products_tenant_code_uq');
         });
 
         Schema::create('loan_applications', function (Blueprint $table) {
-            $table->uuid('id')->primary()->default(DB::raw('gen_random_uuid()'));
+            $table->uuid('id')->primary();
             $table->foreignUuid('tenant_id')->constrained('tenants');
             $table->foreignUuid('branch_id')->constrained('branches');
             $table->string('application_number', 20);
@@ -46,18 +46,18 @@ return new class extends Migration {
             $table->decimal('existing_debt_repayments', 18, 2);
             $table->enum('status', ['submitted', 'approved', 'rejected', 'cancelled'])->default('submitted');
             $table->enum('channel', ['branch', 'self_service'])->default('branch');
-            $table->jsonb('assessment');
+            $table->json('assessment');
             $table->uuid('submitted_by');
-            $table->timestampTz('submitted_at')->useCurrent();
-            $table->timestampTz('decided_at')->nullable();
+            $table->timestamp('submitted_at')->useCurrent();
+            $table->timestamp('decided_at')->nullable();
             $table->text('borrower_signature')->nullable();
-            $table->timestampTz('borrower_signed_at')->nullable();
+            $table->timestamp('borrower_signed_at')->nullable();
             $table->unique(['tenant_id', 'application_number'], 'applications_tenant_number_uq');
             $table->index(['tenant_id', 'status'], 'applications_status_idx');
         });
 
         Schema::create('guarantors', function (Blueprint $table) {
-            $table->uuid('id')->primary()->default(DB::raw('gen_random_uuid()'));
+            $table->uuid('id')->primary();
             $table->foreignUuid('tenant_id')->constrained('tenants');
             $table->foreignUuid('application_id')->constrained('loan_applications');
             $table->string('full_name');
@@ -66,11 +66,11 @@ return new class extends Migration {
             $table->string('relationship');
             $table->text('address')->nullable();
             $table->text('signature')->nullable();
-            $table->timestampTz('signed_at')->nullable();
+            $table->timestamp('signed_at')->nullable();
         });
 
         Schema::create('collateral', function (Blueprint $table) {
-            $table->uuid('id')->primary()->default(DB::raw('gen_random_uuid()'));
+            $table->uuid('id')->primary();
             $table->foreignUuid('tenant_id')->constrained('tenants');
             $table->foreignUuid('application_id')->constrained('loan_applications');
             $table->string('type');
@@ -78,11 +78,11 @@ return new class extends Migration {
             $table->string('identifier')->nullable();
             $table->decimal('estimated_value', 18, 2);
             $table->string('location')->nullable();
-            $table->timestampTz('created_at')->useCurrent();
+            $table->timestamp('created_at')->useCurrent();
         });
 
         Schema::create('application_documents', function (Blueprint $table) {
-            $table->uuid('id')->primary()->default(DB::raw('gen_random_uuid()'));
+            $table->uuid('id')->primary();
             $table->foreignUuid('tenant_id')->constrained('tenants');
             $table->foreignUuid('application_id')->constrained('loan_applications');
             $table->foreignUuid('guarantor_id')->nullable()->constrained('guarantors');
@@ -94,18 +94,18 @@ return new class extends Migration {
             $table->string('storage_key');
             $table->string('sha256');
             $table->uuid('uploaded_by');
-            $table->timestampTz('created_at')->useCurrent();
+            $table->timestamp('created_at')->useCurrent();
         });
 
         Schema::create('credit_decisions', function (Blueprint $table) {
-            $table->uuid('id')->primary()->default(DB::raw('gen_random_uuid()'));
+            $table->uuid('id')->primary();
             $table->foreignUuid('tenant_id')->constrained('tenants');
             $table->foreignUuid('application_id')->constrained('loan_applications');
             $table->string('decision');
             $table->text('reason');
             $table->decimal('approver_limit', 18, 2);
             $table->uuid('decided_by');
-            $table->timestampTz('decided_at')->useCurrent();
+            $table->timestamp('decided_at')->useCurrent();
         });
     }
 
