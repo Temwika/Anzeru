@@ -68,7 +68,7 @@ class LoanStatsWidget extends StatsOverviewWidget
         // Pending applications
         $pendingApps = LoanApplication::where('status', 'submitted')->count();
 
-        $fmt = fn ($v) => 'MK ' . number_format((float) $v, 0);
+        $fmt = fn ($v) => 'K ' . number_format((float) $v, 0);
 
         return [
             Stat::make('Active Loans', number_format($total))
