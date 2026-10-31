@@ -50,16 +50,22 @@ export function GroupedBarChart({ data, series, height = 220 }: { data: TrendPoi
                 onMouseEnter={() => setHover(i)}
                 onMouseLeave={() => setHover(null)}
               >
-                {hover === i && <div className="absolute inset-x-1 inset-y-0 rounded-md bg-slate-100/70" />}
+                {hover === i && <div className="absolute inset-x-1 inset-y-0 animate-fade-in rounded-md bg-slate-100/70" />}
                 {d.values.map((v, j) => (
                   <div
                     key={j}
-                    className="relative w-full max-w-7 rounded-t-[4px] transition-opacity"
-                    style={{ height: `${(v / top) * 100}%`, background: SERIES[j], opacity: hover === null || hover === i ? 1 : 0.45 }}
+                    className="relative w-full max-w-7 origin-bottom animate-grow-up rounded-t-[5px] transition-[opacity,filter] duration-200"
+                    style={{
+                      height: `${(v / top) * 100}%`,
+                      background: `linear-gradient(to top, ${SERIES[j]}d9, ${SERIES[j]})`,
+                      opacity: hover === null || hover === i ? 1 : 0.4,
+                      filter: hover === i ? "saturate(1.15) brightness(1.05)" : undefined,
+                      animationDelay: `${i * 70 + j * 35}ms`,
+                    }}
                   />
                 ))}
                 {hover === i && (
-                  <div className="pointer-events-none absolute bottom-full z-10 mb-2 w-48 rounded-lg border border-slate-200 bg-white p-3 text-xs shadow-lg">
+                  <div className="pointer-events-none absolute bottom-full z-10 mb-2 w-48 animate-pop-in rounded-xl border border-black/5 bg-white/95 p-3 text-xs shadow-pop backdrop-blur">
                     <p className="mb-1.5 font-medium text-slate-900">{d.label}</p>
                     {series.map((s, j) => (
                       <p key={s} className="flex items-center justify-between gap-2 text-slate-600">
@@ -109,7 +115,7 @@ export function AgeingBar({ buckets }: { buckets: { bucket: string; count: numbe
   const total = buckets.reduce((s, b) => s + Number(b.principal), 0) || 1;
   return (
     <div>
-      <div className="flex h-3 gap-[2px] overflow-hidden rounded-full bg-slate-100">
+      <div className="flex h-3 origin-left animate-grow-x gap-[2px] overflow-hidden rounded-full bg-slate-100">
         {buckets
           .filter((b) => Number(b.principal) > 0)
           .map((b) => (
@@ -123,7 +129,7 @@ export function AgeingBar({ buckets }: { buckets: { bucket: string; count: numbe
             />
           ))}
       </div>
-      <ul className="mt-4 space-y-1">
+      <ul className="stagger mt-4 space-y-1">
         {buckets.map((b) => {
           const s = BUCKET_STYLE[b.bucket];
           return (

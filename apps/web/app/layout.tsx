@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { Inter, JetBrains_Mono, Plus_Jakarta_Sans } from "next/font/google";
+import { themeScript } from "@/components/theme";
 import "./globals.css";
 
 const inter = Inter({ variable: "--font-inter", subsets: ["latin"] });
@@ -15,7 +16,11 @@ export const viewport: Viewport = { themeColor: "#1c100b" };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
-    <html lang="en" className={`${inter.variable} ${display.variable} ${mono.variable} h-full antialiased`}>
+    // The theme script sets the `dark` class before React hydrates, hence suppressHydrationWarning.
+    <html lang="en" className={`${inter.variable} ${display.variable} ${mono.variable} h-full antialiased`} suppressHydrationWarning>
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: themeScript }} />
+      </head>
       <body className="min-h-full flex flex-col">{children}</body>
     </html>
   );

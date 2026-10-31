@@ -21,6 +21,7 @@ import {
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { AgeingBar, GroupedBarChart } from "@/components/charts";
+import { AnimatedValue, trackSpotlight } from "@/components/motion";
 import { Avatar, Card, CardHeader, ErrorState, ProgressBar, Skeleton, StatCard, StatusBadge, Table, Td, Th } from "@/components/ui";
 import { usePage, useApi, useSession } from "@/lib/api";
 import { cn } from "@/lib/cn";
@@ -144,10 +145,15 @@ export default function DashboardPage() {
   return (
     <>
       {/* Welcome band: who you are, what needs you, what to do next. */}
-      <section className="relative mb-6 animate-slide-up overflow-hidden rounded-3xl bg-ink-950 p-6 text-white sm:p-8">
-        <div className="bg-grid pointer-events-none absolute inset-0 opacity-60" />
-        <div className="pointer-events-none absolute -right-24 -top-32 size-96 rounded-full bg-brand-500/25 blur-3xl" />
-        <div className="pointer-events-none absolute -bottom-40 left-1/3 size-80 rounded-full bg-copper-500/10 blur-3xl" />
+      <section
+        onPointerMove={trackSpotlight}
+        style={{ "--spot": "rgb(249 133 64 / 0.16)" } as React.CSSProperties}
+        className="spotlight relative mb-6 animate-rise overflow-hidden rounded-3xl bg-ink-950 p-6 text-white shadow-[0_30px_60px_-30px_rgb(28_16_11/0.6)] ring-1 ring-white/5 sm:p-8"
+      >
+        <div className="bg-grid pointer-events-none absolute inset-0 -z-10 opacity-60 [mask-image:radial-gradient(ellipse_at_top_right,black,transparent_75%)]" />
+        <div className="pointer-events-none absolute -right-24 -top-32 -z-10 size-96 animate-float rounded-full bg-brand-500/30 blur-3xl" />
+        <div className="pointer-events-none absolute -bottom-40 left-1/3 -z-10 size-80 animate-float rounded-full bg-copper-500/15 blur-3xl [animation-delay:-3.5s]" />
+        <div className="grain pointer-events-none absolute inset-0 -z-10 opacity-[0.07]" />
         <div className="relative grid gap-8 lg:grid-cols-[1fr_1.15fr] lg:items-center">
           <div>
             <p className="flex items-center gap-2 text-sm text-slate-400">
@@ -171,18 +177,24 @@ export default function DashboardPage() {
               )}
             </p>
             {data && (
-              <div className="mt-6 flex flex-wrap gap-x-8 gap-y-3 text-sm">
-                <div>
+              <div className="stagger mt-6 flex flex-wrap gap-x-8 gap-y-3 text-sm">
+                <div className="border-l border-white/10 pl-4">
                   <p className="text-slate-400">Active loans</p>
-                  <p className="tabular font-display text-xl font-bold">{data.kpis.activeLoans}</p>
+                  <p className="tabular font-display text-2xl font-bold">
+                    <AnimatedValue value={data.kpis.activeLoans.toLocaleString("en-US")} />
+                  </p>
                 </div>
-                <div>
+                <div className="border-l border-white/10 pl-4">
                   <p className="text-slate-400">Portfolio</p>
-                  <p className="tabular font-display text-xl font-bold">{kwacha(data.kpis.outstandingPrincipal, { compact: true })}</p>
+                  <p className="tabular font-display text-2xl font-bold">
+                    <AnimatedValue value={kwacha(data.kpis.outstandingPrincipal, { compact: true })} />
+                  </p>
                 </div>
-                <div>
+                <div className="border-l border-white/10 pl-4">
                   <p className="text-slate-400">PAR 30</p>
-                  <p className={cn("tabular font-display text-xl font-bold", par30 > 10 ? "text-copper-400" : "text-brand-300")}>{pct(data.kpis.par30)}</p>
+                  <p className={cn("tabular font-display text-2xl font-bold", par30 > 10 ? "text-copper-400" : "text-brand-300")}>
+                    <AnimatedValue value={pct(data.kpis.par30)} />
+                  </p>
                 </div>
               </div>
             )}
@@ -190,22 +202,26 @@ export default function DashboardPage() {
 
           <div>
             <p className="mb-3 text-xs font-semibold uppercase tracking-[0.14em] text-slate-400">Your next steps</p>
-            <ul className="grid gap-2 sm:grid-cols-2">
+            <ul className="stagger grid gap-2 sm:grid-cols-2">
               {!user || !now
                 ? Array.from({ length: 4 }, (_, i) => <li key={i} className="h-[76px] animate-pulse rounded-2xl bg-white/5" />)
                 : actions.map((a) => (
                     <li key={a.title}>
                       <Link
                         href={a.href}
+                        onPointerMove={trackSpotlight}
+                        style={{ "--spot": a.urgent ? "rgb(244 183 64 / 0.18)" : "rgb(255 255 255 / 0.08)" } as React.CSSProperties}
                         className={cn(
-                          "group flex h-full items-start gap-3 rounded-2xl border p-3.5 transition",
-                          a.urgent ? "border-copper-400/30 bg-copper-500/10 hover:bg-copper-500/20" : "border-white/10 bg-white/[0.04] hover:bg-white/[0.08]",
+                          "spotlight group flex h-full items-start gap-3 rounded-2xl border p-3.5 backdrop-blur-sm transition duration-300 ease-[var(--ease-out-expo)] hover:-translate-y-0.5 active:scale-[0.98]",
+                          a.urgent
+                            ? "border-copper-400/30 bg-copper-500/10 hover:border-copper-400/50 hover:bg-copper-500/15"
+                            : "border-white/10 bg-white/[0.04] hover:border-white/20 hover:bg-white/[0.07]",
                         )}
                       >
                         <span
                           className={cn(
-                            "grid size-9 shrink-0 place-items-center rounded-xl",
-                            a.urgent ? "bg-copper-500 text-white" : "bg-white/10 text-brand-300",
+                            "grid size-9 shrink-0 place-items-center rounded-xl transition duration-300 ease-[var(--ease-spring)] group-hover:scale-110",
+                            a.urgent ? "bg-copper-500 text-white shadow-[0_6px_16px_-4px_rgb(220_149_18/0.6)]" : "bg-white/10 text-brand-300",
                           )}
                         >
                           <a.icon className="size-4" />
@@ -213,7 +229,7 @@ export default function DashboardPage() {
                         <span className="min-w-0 flex-1">
                           <span className="flex items-center gap-1 text-sm font-semibold text-white">
                             {a.title}
-                            <ArrowUpRight className="size-3.5 opacity-0 transition group-hover:opacity-100" />
+                            <ArrowUpRight className="size-3.5 -translate-x-1 translate-y-1 opacity-0 transition duration-300 group-hover:translate-x-0 group-hover:translate-y-0 group-hover:opacity-100" />
                           </span>
                           <span className="mt-0.5 block text-xs leading-relaxed text-slate-400">{a.body}</span>
                         </span>
@@ -229,7 +245,7 @@ export default function DashboardPage() {
 
       {error && <ErrorState error={error} onRetry={() => refetch()} />}
 
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+      <div className="stagger grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <StatCard
           loading={isLoading}
           icon={PiggyBank}
@@ -471,17 +487,18 @@ function NewApplicants() {
         </div>
         <Link
           href="/applications?status=submitted"
-          className="inline-flex items-center gap-1.5 rounded-xl bg-brand-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-brand-700"
+          className="inline-flex items-center gap-1.5 rounded-xl bg-brand-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:brightness-90"
         >
           See all applicants <ArrowRight className="size-4" />
         </Link>
       </div>
-      <ul className="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+      <ul className="stagger mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
         {data.items.map((a) => (
           <li key={a.id}>
             <Link
               href={`/applications/${a.id}`}
-              className="group flex h-full items-center gap-3 rounded-2xl border border-slate-200 bg-white p-3.5 transition hover:-translate-y-0.5 hover:border-brand-300 hover:shadow-lift"
+              onPointerMove={trackSpotlight}
+              className="spotlight group flex h-full items-center gap-3 overflow-hidden rounded-2xl border border-slate-200 bg-white p-3.5 transition duration-300 ease-[var(--ease-out-expo)] hover:-translate-y-1 hover:border-brand-300 hover:shadow-lift active:scale-[0.98]"
             >
               <Avatar name={a.customerName} />
               <span className="min-w-0 flex-1">

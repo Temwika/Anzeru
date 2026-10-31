@@ -1,6 +1,7 @@
 import { BadgeCheck, Landmark, ShieldCheck } from "lucide-react";
 import { Suspense } from "react";
 import { Logo } from "@/components/logo";
+import { ThemeToggle } from "@/components/theme";
 import { LoginForm } from "./login-form";
 
 export const metadata = { title: "Sign in" };
@@ -16,8 +17,9 @@ export default function LoginPage() {
     <div className="grid min-h-dvh lg:grid-cols-[1.05fr_1fr]">
       <div className="relative hidden overflow-hidden bg-ink-950 p-12 text-white lg:flex lg:flex-col lg:justify-between">
         <div className="bg-grid pointer-events-none absolute inset-0" />
-        <div className="pointer-events-none absolute -left-32 -top-32 size-[520px] rounded-full bg-brand-500/20 blur-3xl" />
-        <div className="pointer-events-none absolute -bottom-48 right-0 size-[460px] rounded-full bg-copper-500/15 blur-3xl" />
+        <div className="pointer-events-none absolute -left-32 -top-32 size-[520px] animate-float rounded-full bg-brand-500/20 blur-3xl" />
+        <div className="pointer-events-none absolute -bottom-48 right-0 size-[460px] animate-float rounded-full bg-copper-500/15 blur-3xl [animation-delay:-3.5s]" />
+        <div className="grain pointer-events-none absolute inset-0 opacity-[0.06]" />
 
         <a href="/" className="relative">
           <Logo dark subtitle="Loan management platform" />
@@ -29,7 +31,7 @@ export default function LoginPage() {
           </p>
 
           {/* A glimpse of the product: what a loan officer sees each morning. */}
-          <div className="mt-10 rounded-2xl border border-white/10 bg-white/[0.04] p-5 backdrop-blur">
+          <div className="mt-10 animate-rise rounded-2xl border border-white/10 bg-white/[0.04] p-5 shadow-[0_30px_60px_-30px_rgb(0_0_0/0.6)] backdrop-blur [animation-delay:150ms]">
             <div className="flex items-center justify-between text-xs text-slate-400">
               <span>Portfolio today</span>
               <span className="rounded-full bg-brand-500/15 px-2 py-0.5 font-medium text-brand-300">Example</span>
@@ -48,12 +50,16 @@ export default function LoginPage() {
             </div>
             <div className="mt-4 flex h-12 items-end gap-1.5">
               {[38, 52, 45, 61, 58, 72, 66, 80, 76, 88, 84, 95].map((h, i) => (
-                <span key={i} className="flex-1 rounded-t bg-gradient-to-t from-brand-600/60 to-brand-400" style={{ height: `${h}%` }} />
+                <span
+                  key={i}
+                  className="flex-1 origin-bottom animate-grow-up rounded-t bg-gradient-to-t from-brand-600/60 to-brand-400"
+                  style={{ height: `${h}%`, animationDelay: `${300 + i * 50}ms` }}
+                />
               ))}
             </div>
           </div>
 
-          <ul className="mt-8 space-y-4">
+          <ul className="stagger mt-8 space-y-4">
             {PROOF.map((p) => (
               <li key={p.title} className="flex gap-3">
                 <span className="grid size-9 shrink-0 place-items-center rounded-xl bg-white/[0.06] text-brand-300">
@@ -71,7 +77,8 @@ export default function LoginPage() {
         <p className="relative text-xs text-slate-500">© 2026 Chilimbitso Money Lending · Sinda, Eastern Province</p>
       </div>
 
-      <div className="flex flex-col items-center justify-center bg-white px-6 py-10 sm:px-10">
+      <div className="relative flex flex-col items-center justify-center bg-white px-6 py-10 sm:px-10">
+        <ThemeToggle className="absolute right-4 top-4" />
         <div className="mb-10 lg:hidden">
           <Logo subtitle="Loan management platform" />
         </div>

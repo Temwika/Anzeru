@@ -214,7 +214,7 @@ export default function ApplicationPage() {
         <Card>
           <CardHeader title="Risk score" description="Rules-based scorecard; every point is explained" />
           <div className="flex items-center gap-4 p-5">
-            <div className="grid size-20 place-items-center rounded-2xl bg-slate-900 text-white">
+            <div className="grid size-20 place-items-center rounded-2xl bg-ink-900 text-white">
               <span className="text-3xl font-semibold">{s.grade}</span>
             </div>
             <div>

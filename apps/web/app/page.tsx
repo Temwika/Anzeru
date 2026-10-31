@@ -16,6 +16,7 @@ import {
 import Link from "next/link";
 import { APPLY_HREF, PhoneMock, ProductCalculator, ProductCatalogue } from "@/components/landing";
 import { Logo } from "@/components/logo";
+import { ThemeToggle } from "@/components/theme";
 
 /** Licence wording is set per deployment (e.g. "Licensed by the Bank of Zambia, licence no. …") and only shown when provided. */
 const LICENCE = process.env.NEXT_PUBLIC_LICENCE_TEXT;
@@ -105,6 +106,7 @@ export default function Home() {
             <Link href="/login" className="rounded-lg px-3 py-2 text-sm font-medium text-slate-200 hover:text-white">
               Sign in
             </Link>
+            <ThemeToggle onDark />
             <Link href={APPLY_HREF} className="rounded-lg bg-brand-500 px-4 py-2 text-sm font-semibold text-ink-950 hover:bg-brand-400">
               Apply
             </Link>

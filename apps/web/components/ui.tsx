@@ -2,19 +2,21 @@
 
 import { ArrowLeft, Check, ChevronLeft, ChevronRight, Loader2, Search, X } from "lucide-react";
 import Link from "next/link";
-import { forwardRef, useEffect, useRef } from "react";
+import { forwardRef, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { cn } from "@/lib/cn";
+import { AnimatedValue, trackSpotlight } from "./motion";
 
 /* ───────────────────────────── Buttons ───────────────────────────── */
 
 type ButtonVariant = "primary" | "secondary" | "ghost" | "danger" | "soft" | "dark";
 const buttonStyles: Record<ButtonVariant, string> = {
-  primary: "bg-brand-600 text-white shadow-[0_1px_0_rgb(255_255_255/0.15)_inset,0_1px_2px_rgb(4_120_95/0.4)] hover:bg-brand-700 active:bg-brand-800",
-  secondary: "border border-slate-200 bg-white text-slate-700 shadow-card hover:border-slate-300 hover:bg-slate-50 active:bg-slate-100",
-  ghost: "text-slate-600 hover:bg-slate-100 hover:text-slate-900",
-  danger: "bg-rose-600 text-white shadow-sm hover:bg-rose-700 active:bg-rose-800",
-  soft: "bg-brand-50 text-brand-800 hover:bg-brand-100",
-  dark: "bg-ink-900 text-white shadow-sm hover:bg-ink-800",
+  primary:
+    "sheen bg-gradient-to-b from-brand-500 to-brand-600 text-white shadow-[0_1px_0_rgb(255_255_255/0.22)_inset,0_1px_2px_rgb(164_63_12/0.45),0_4px_12px_-4px_rgb(242_107_29/0.5)] hover:brightness-[0.93] hover:shadow-[0_1px_0_rgb(255_255_255/0.22)_inset,0_1px_2px_rgb(164_63_12/0.45),0_10px_24px_-8px_rgb(242_107_29/0.65)] active:brightness-90",
+  secondary: "border border-slate-200 bg-white text-slate-700 shadow-card hover:border-slate-300 hover:bg-slate-50 hover:shadow-lift active:bg-slate-100",
+  ghost: "text-slate-600 hover:bg-slate-900/[0.05] hover:text-slate-900",
+  danger: "sheen bg-gradient-to-b from-rose-500 to-rose-600 text-white shadow-[0_1px_0_rgb(255_255_255/0.2)_inset,0_4px_12px_-4px_rgb(225_29_72/0.5)] hover:brightness-[0.93]",
+  soft: "bg-brand-50 text-brand-800 ring-1 ring-inset ring-brand-100 hover:bg-brand-100",
+  dark: "sheen bg-ink-900 text-white shadow-[0_1px_0_rgb(255_255_255/0.1)_inset,0_4px_12px_-4px_rgb(28_16_11/0.5)] hover:bg-ink-800",
 };
 const buttonSizes = { sm: "h-8 px-3 text-xs rounded-lg", md: "h-10 px-4 text-sm rounded-xl", lg: "h-12 px-6 text-[15px] rounded-xl" };
 
@@ -34,7 +36,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button
       type={type}
       disabled={disabled || loading}
       className={cn(
-        "inline-flex select-none items-center justify-center gap-2 whitespace-nowrap font-medium transition duration-150 outline-none focus-visible:ring-4 focus-visible:ring-brand-500/25 disabled:pointer-events-none disabled:opacity-55",
+        "inline-flex select-none items-center justify-center gap-2 whitespace-nowrap font-medium transition-[background-color,border-color,box-shadow,transform,color] duration-200 ease-[var(--ease-out-expo)] outline-none active:scale-[0.97] focus-visible:ring-4 focus-visible:ring-brand-500/25 disabled:pointer-events-none disabled:opacity-55",
         buttonSizes[size],
         buttonStyles[variant],
         className,
@@ -67,7 +69,7 @@ export function ButtonLink({
       href={href}
       {...rest}
       className={cn(
-        "inline-flex items-center justify-center gap-2 whitespace-nowrap font-medium transition duration-150",
+        "inline-flex select-none items-center justify-center gap-2 whitespace-nowrap font-medium transition-[background-color,border-color,box-shadow,transform,color] duration-200 ease-[var(--ease-out-expo)] active:scale-[0.97]",
         buttonSizes[size],
         buttonStyles[variant],
         className,
@@ -82,7 +84,7 @@ export function ButtonLink({
 
 export function Card({ className, children, ...props }: React.HTMLAttributes<HTMLDivElement>) {
   return (
-    <div className={cn("rounded-2xl border border-slate-200/70 bg-white shadow-card", className)} {...props}>
+    <div className={cn("rounded-2xl border border-line bg-white shadow-card", className)} {...props}>
       {children}
     </div>
   );
@@ -229,7 +231,7 @@ export function Skeleton({ className }: { className?: string }) {
   return (
     <div
       className={cn(
-        "animate-shimmer rounded-lg bg-[linear-gradient(90deg,rgb(226_232_240/0.7)_0%,rgb(241_245_249)_50%,rgb(226_232_240/0.7)_100%)] bg-[length:800px_100%]",
+        "animate-shimmer rounded-lg bg-[linear-gradient(90deg,var(--color-line)_0%,var(--color-line-soft)_50%,var(--color-line)_100%)] bg-[length:800px_100%]",
         className,
       )}
     />
@@ -239,8 +241,11 @@ export function Skeleton({ className }: { className?: string }) {
 export function EmptyState({ icon: Icon, title, body, action }: { icon: React.ElementType; title: string; body?: string; action?: React.ReactNode }) {
   return (
     <div className="flex flex-col items-center justify-center px-6 py-16 text-center">
-      <span className="relative grid size-14 place-items-center rounded-2xl bg-gradient-to-b from-brand-50 to-white text-brand-700 ring-1 ring-brand-100">
-        <Icon className="size-6" />
+      <span className="relative grid size-14 place-items-center">
+        <span className="absolute inset-[-14px] rounded-full bg-brand-100/50 blur-xl" aria-hidden />
+        <span className="relative grid size-14 animate-pop-in place-items-center rounded-2xl bg-gradient-to-b from-brand-50 to-white text-brand-700 shadow-card ring-1 ring-brand-100">
+          <Icon className="size-6" />
+        </span>
       </span>
       <p className="mt-4 font-display text-base font-semibold text-slate-900">{title}</p>
       {body && <p className="mt-1 max-w-sm text-sm leading-relaxed text-slate-500">{body}</p>}
@@ -357,8 +362,28 @@ export function Pager({ page, pageSize, total, onPage }: { page: number; pageSiz
 }
 
 export function Tabs<T extends string>({ tabs, value, onChange }: { tabs: { value: T; label: string; count?: number }[]; value: T; onChange: (v: T) => void }) {
+  const list = useRef<HTMLDivElement>(null);
+  const [pill, setPill] = useState<{ left: number; width: number } | null>(null);
+  // The white pill glides between tabs instead of jumping.
+  useLayoutEffect(() => {
+    const measure = () => {
+      const el = list.current?.querySelector<HTMLElement>('[aria-selected="true"]');
+      setPill(el ? { left: el.offsetLeft, width: el.offsetWidth } : null);
+    };
+    measure();
+    const ro = new ResizeObserver(measure);
+    if (list.current) ro.observe(list.current);
+    return () => ro.disconnect();
+  }, [value, tabs.length]);
   return (
-    <div className="no-scrollbar inline-flex max-w-full gap-1 overflow-x-auto rounded-xl bg-slate-200/50 p-1" role="tablist">
+    <div ref={list} className="no-scrollbar relative inline-flex max-w-full gap-1 overflow-x-auto rounded-xl bg-line/70 p-1" role="tablist">
+      {pill && (
+        <span
+          aria-hidden
+          className="absolute inset-y-1 rounded-lg bg-white shadow-[0_1px_2px_rgb(28_16_11/0.08),0_2px_8px_-2px_rgb(28_16_11/0.08)] transition-[left,width] duration-300 ease-[var(--ease-out-expo)]"
+          style={{ left: pill.left, width: pill.width }}
+        />
+      )}
       {tabs.map((t) => {
         const on = value === t.value;
         return (
@@ -368,8 +393,9 @@ export function Tabs<T extends string>({ tabs, value, onChange }: { tabs: { valu
             aria-selected={on}
             onClick={() => onChange(t.value)}
             className={cn(
-              "inline-flex items-center gap-1.5 whitespace-nowrap rounded-lg px-3.5 py-1.5 text-sm font-medium transition",
-              on ? "bg-white text-slate-900 shadow-card" : "text-slate-600 hover:text-slate-900",
+              "relative inline-flex items-center gap-1.5 whitespace-nowrap rounded-lg px-3.5 py-1.5 text-sm font-medium transition-colors duration-200",
+              on ? "text-slate-900" : "text-slate-600 hover:text-slate-900",
+              on && !pill && "bg-white shadow-card",
             )}
           >
             {t.label}
@@ -416,11 +442,11 @@ export function Modal({
   if (!open) return null;
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center sm:items-center sm:p-4" role="dialog" aria-modal="true" aria-label={title}>
-      <div className="absolute inset-0 animate-fade-in bg-ink-950/50 backdrop-blur-[2px]" onClick={onClose} />
+      <div className="absolute inset-0 animate-fade-in bg-ink-950/45 backdrop-blur-[6px]" onClick={onClose} />
       <div
         ref={panel}
         className={cn(
-          "relative max-h-[92dvh] w-full animate-pop-in overflow-y-auto rounded-t-3xl bg-white shadow-pop sm:rounded-2xl",
+          "relative max-h-[92dvh] w-full animate-toast-in overflow-y-auto rounded-t-3xl bg-white shadow-pop ring-1 ring-black/5 sm:rounded-3xl",
           wide ? "sm:max-w-2xl" : "sm:max-w-md",
         )}
       >
@@ -553,11 +579,22 @@ export function StatCard({
     copper: "bg-copper-50 text-copper-600",
   }[tone];
   const body = (
-    <Card className={cn("h-full p-5 transition", href && "hover:-translate-y-0.5 hover:shadow-lift")}>
+    <Card
+      onPointerMove={trackSpotlight}
+      className={cn(
+        "spotlight group/stat h-full animate-rise overflow-hidden p-5 transition duration-300 ease-[var(--ease-out-expo)]",
+        href && "hover:-translate-y-1 hover:border-brand-200 hover:shadow-lift",
+      )}
+    >
       <div className="flex items-start justify-between gap-3">
         <p className="text-[13px] font-medium text-slate-500">{label}</p>
         {Icon && (
-          <span className={cn("grid size-9 shrink-0 place-items-center rounded-xl", iconTone)}>
+          <span
+            className={cn(
+              "grid size-9 shrink-0 place-items-center rounded-xl transition duration-300 ease-[var(--ease-spring)] group-hover/stat:-rotate-6 group-hover/stat:scale-110",
+              iconTone,
+            )}
+          >
             <Icon className="size-[18px]" />
           </span>
         )}
@@ -565,7 +602,9 @@ export function StatCard({
       {loading || value === undefined ? (
         <Skeleton className="mt-2 h-8 w-32" />
       ) : (
-        <div className="tabular mt-1 font-display text-[28px] font-bold leading-none tracking-tight text-slate-900">{value}</div>
+        <div className="tabular mt-1 font-display text-[28px] font-bold leading-none tracking-tight text-slate-900">
+          <AnimatedValue value={value} />
+        </div>
       )}
       {sub && <div className="mt-2 text-xs leading-relaxed text-slate-500">{sub}</div>}
       {children}
@@ -581,7 +620,18 @@ export function StatCard({
 }
 
 export function ProgressBar({ value, tone = "brand", label }: { value: number; tone?: "brand" | "amber" | "rose"; label?: string }) {
-  const bar = { brand: "bg-brand-500", amber: "bg-amber-500", rose: "bg-rose-500" }[tone];
+  const bar = {
+    brand: "bg-gradient-to-r from-brand-400 to-brand-600",
+    amber: "bg-gradient-to-r from-amber-400 to-amber-500",
+    rose: "bg-gradient-to-r from-rose-400 to-rose-600",
+  }[tone];
+  // Starts empty and fills on mount, so the bar reads as progress rather than a static stripe.
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => {
+    const frame = requestAnimationFrame(() => setMounted(true));
+    return () => cancelAnimationFrame(frame);
+  }, []);
+  const width = mounted ? Math.max(0, Math.min(100, value)) : 0;
   return (
     <div
       className="h-1.5 w-full overflow-hidden rounded-full bg-slate-100"
@@ -591,7 +641,7 @@ export function ProgressBar({ value, tone = "brand", label }: { value: number; t
       aria-valuemax={100}
       aria-label={label}
     >
-      <div className={cn("h-full rounded-full transition-all duration-700", bar)} style={{ width: `${Math.max(0, Math.min(100, value))}%` }} />
+      <div className={cn("h-full rounded-full transition-[width] duration-1000 ease-[var(--ease-out-expo)]", bar)} style={{ width: `${width}%` }} />
     </div>
   );
 }

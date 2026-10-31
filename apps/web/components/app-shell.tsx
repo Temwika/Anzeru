@@ -51,6 +51,7 @@ import { cn } from "@/lib/cn";
 import { api, useApi, useSession } from "@/lib/api";
 import { CommandPalette, type PaletteLink } from "./command-palette";
 import { Logo, LogoMark } from "./logo";
+import { ThemeSegmented, ThemeToggle } from "./theme";
 import { useToast } from "./toast";
 import { Avatar, Kbd, Skeleton } from "./ui";
 
@@ -201,6 +202,14 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const { data: tasks } = useApi<Tasks>(user && user.role !== "platform_admin" ? "/reports/tasks" : null, { refetchInterval: 30_000 });
   useNewApplicantAlert(tasks);
 
+  const [scrolled, setScrolled] = useState(false);
+  useEffect(() => {
+    const onScroll = () => setScrolled(window.scrollY > 4);
+    onScroll();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
+
   useEffect(() => setDrawer(false), [pathname]);
   useEffect(() => {
     if (user?.role === "borrower") router.replace("/borrower");
@@ -273,7 +282,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="min-h-screen">
-      <aside className="fixed inset-y-0 left-0 z-30 hidden w-64 flex-col bg-ink-950 lg:flex">{sidebar}</aside>
+      <aside className="fixed inset-y-0 left-0 z-30 hidden w-64 flex-col overflow-hidden bg-ink-950 dark:border-r dark:border-white/[0.06] bg-[radial-gradient(420px_260px_at_0%_0%,rgb(242_107_29/0.14),transparent_70%)] lg:flex">
+        {sidebar}
+      </aside>
 
       {drawer && (
         <div className="fixed inset-0 z-40 lg:hidden">
@@ -292,7 +303,13 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       )}
 
       <div className="lg:pl-64">
-        <header className="sticky top-0 z-20 border-b border-slate-200/70 bg-white/95 backdrop-blur-md">
+        <NavProgress pathname={pathname} />
+        <header
+          className={cn(
+            "glass sticky top-0 z-20 border-b transition-[box-shadow,border-color] duration-300",
+            scrolled ? "border-line shadow-[0_8px_24px_-16px_rgb(28_16_11/0.25)]" : "border-transparent",
+          )}
+        >
           <div className="mx-auto flex h-16 max-w-7xl items-center gap-3 px-4 sm:px-6 lg:px-8">
             <button onClick={() => setDrawer(true)} className="-ml-1 rounded-lg p-2 text-slate-600 hover:bg-slate-100 lg:hidden" aria-label="Open menu">
               <Menu className="size-5" />
@@ -315,14 +332,64 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             </button>
             {!!tasks?.newApplicants && user?.permissions.includes("applications:read") && <NewApplicantsPill count={tasks.newApplicants} />}
             {user && <QuickCreate user={user} />}
+            <ThemeToggle className="hidden sm:grid" />
             {user && user.role !== "platform_admin" && <Inbox tasks={tasks} user={user} />}
             {user ? <UserMenu user={user} onLogout={logout} /> : <Skeleton className="size-9 rounded-full" />}
           </div>
         </header>
-        <main className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8 lg:py-8">{children}</main>
+        <main key={pathname} className="mx-auto max-w-7xl animate-page-in px-4 py-6 sm:px-6 lg:px-8 lg:py-8">
+          {children}
+        </main>
       </div>
 
       {user && <CommandPalette open={palette} onClose={() => setPalette(false)} user={user} pages={PAGES} />}
+    </div>
+  );
+}
+
+/**
+ * A thin brand line across the top while a page loads: it starts on any in-app link click and
+ * completes when the pathname changes, so a slow screen never feels like a dead click.
+ */
+function NavProgress({ pathname }: { pathname: string }) {
+  const [state, setState] = useState<"idle" | "loading" | "done">("idle");
+  const from = useRef(pathname);
+  useEffect(() => {
+    const onClick = (e: MouseEvent) => {
+      if (e.defaultPrevented || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+      const a = (e.target as HTMLElement).closest("a");
+      if (!a || a.target === "_blank" || a.hasAttribute("download")) return;
+      const url = new URL(a.href, location.href);
+      if (url.origin !== location.origin || url.pathname === location.pathname) return;
+      from.current = location.pathname;
+      setState("loading");
+    };
+    document.addEventListener("click", onClick);
+    return () => document.removeEventListener("click", onClick);
+  }, []);
+  useEffect(() => {
+    if (pathname === from.current) return;
+    from.current = pathname;
+    setState((s) => (s === "loading" ? "done" : s));
+    const t = setTimeout(() => setState("idle"), 450);
+    return () => clearTimeout(t);
+  }, [pathname]);
+  // A cancelled or failed navigation must not leave the bar hanging.
+  useEffect(() => {
+    if (state !== "loading") return;
+    const t = setTimeout(() => setState("idle"), 10_000);
+    return () => clearTimeout(t);
+  }, [state]);
+  if (state === "idle") return null;
+  return (
+    <div className="pointer-events-none fixed inset-x-0 top-0 z-[70] h-[3px]" aria-hidden>
+      <div
+        className={cn(
+          "h-full bg-gradient-to-r from-copper-400 via-brand-500 to-brand-600 shadow-[0_0_10px_rgb(242_107_29/0.7)]",
+          state === "loading" ? "animate-nav-progress" : "origin-left opacity-0 transition-opacity duration-300 delay-150",
+        )}
+        style={state === "done" ? { transform: "scaleX(1)" } : undefined}
+      />
     </div>
   );
 }
@@ -368,13 +435,20 @@ function NavLink({ item, active, count = 0, compact }: { item: NavItem; active: 
       href={item.href}
       aria-current={active ? "page" : undefined}
       className={cn(
-        "group relative flex items-center gap-3 rounded-xl px-3 text-[13.5px] transition",
+        "group relative flex items-center gap-3 rounded-xl px-3 text-[13.5px] transition duration-200",
         compact ? "py-1.5" : "py-[7px]",
-        active ? "bg-brand-500/[0.14] font-medium text-white" : "text-slate-300/80 hover:bg-white/[0.05] hover:text-white",
+        active
+          ? "bg-gradient-to-r from-brand-500/[0.22] to-brand-500/[0.04] font-medium text-white shadow-[inset_0_0_0_1px_rgb(242_107_29/0.18)]"
+          : "text-slate-300/80 hover:translate-x-0.5 hover:bg-white/[0.05] hover:text-white",
       )}
     >
-      {active && <span className="absolute inset-y-1.5 -left-3 w-1 rounded-r-full bg-brand-500" />}
-      <item.icon className={cn("size-[17px] shrink-0", active ? "text-brand-400" : "text-slate-500 group-hover:text-slate-300")} />
+      {active && <span className="absolute inset-y-1.5 -left-3 w-1 rounded-r-full bg-brand-500 shadow-[0_0_12px_2px_rgb(242_107_29/0.55)]" />}
+      <item.icon
+        className={cn(
+          "size-[17px] shrink-0 transition duration-200",
+          active ? "text-brand-400 drop-shadow-[0_0_6px_rgb(249_133_64/0.6)]" : "text-slate-500 group-hover:text-slate-300",
+        )}
+      />
       <span className="flex-1 truncate">{item.label}</span>
       {count > 0 &&
         (item.highlight ? (
@@ -501,8 +575,8 @@ function QuickCreate({ user }: { user: SessionUser }) {
       trigger={(open) => (
         <span
           className={cn(
-            "inline-flex h-10 items-center gap-1.5 rounded-xl bg-brand-600 px-3 text-sm font-medium text-white shadow-sm transition hover:bg-brand-700",
-            open && "bg-brand-700",
+            "inline-flex h-10 items-center gap-1.5 rounded-xl bg-brand-600 px-3 text-sm font-medium text-white shadow-sm transition hover:brightness-90",
+            open && "brightness-90",
           )}
         >
           <Plus className="size-4" />
@@ -552,7 +626,7 @@ function Inbox({ tasks, user }: { tasks?: Tasks; user: SessionUser }) {
         <span className="relative grid size-10 place-items-center rounded-xl text-slate-500 transition hover:bg-slate-100 hover:text-slate-900">
           <Bell className="size-5" />
           {!!tasks?.total && (
-            <span className="tabular absolute right-1 top-1 grid min-w-4 place-items-center rounded-full bg-copper-500 px-1 text-[10px] font-bold leading-4 text-white ring-2 ring-white">
+            <span className="tabular absolute right-1 top-1 grid min-w-4 place-items-center rounded-full bg-copper-500 px-1 text-[10px] font-bold leading-4 text-white ring-2 ring-[var(--surface,#fff)]">
               {tasks.total}
             </span>
           )}
@@ -596,6 +670,10 @@ function UserMenu({ user, onLogout }: { user: SessionUser; onLogout: () => void 
               <p className="truncate text-xs text-slate-500">{user.email}</p>
               <p className="mt-1 inline-flex rounded-full bg-brand-50 px-2 py-0.5 text-[11px] font-medium text-brand-800">{ROLE_LABELS[user.role]}</p>
             </div>
+          </div>
+          <div className="border-b border-slate-100 px-4 py-3">
+            <p className="mb-2 text-xs font-medium text-slate-500">Appearance</p>
+            <ThemeSegmented />
           </div>
           <div className="py-1">
             <Link href="/settings" onClick={close} className="flex items-center gap-3 px-4 py-2.5 text-sm text-slate-700 hover:bg-slate-50">

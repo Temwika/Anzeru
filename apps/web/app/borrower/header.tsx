@@ -4,6 +4,7 @@ import { FileText, House, LogOut, Plus } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { LogoMark } from "@/components/logo";
+import { ThemeToggle } from "@/components/theme";
 import { Avatar } from "@/components/ui";
 import { cn } from "@/lib/cn";
 import { api, useApi } from "@/lib/api";
@@ -50,6 +51,7 @@ export function BorrowerHeader() {
           ))}
         </nav>
         <div className="flex items-center gap-2">
+          <ThemeToggle />
           {data && <Avatar name={`${data.firstName} ${data.lastName}`} size="sm" />}
           <button
             onClick={logout}

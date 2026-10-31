@@ -33,7 +33,7 @@ export function Logo({
           className={cn(
             "block font-display font-extrabold leading-none tracking-tight",
             lg ? "text-[24px]" : "text-[18px]",
-            dark ? "text-white" : "text-[#2b130b]",
+            dark ? "text-white" : "text-[#2b130b] dark:text-white",
           )}
         >
           Chilimbitso

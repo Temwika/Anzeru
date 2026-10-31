@@ -35,9 +35,20 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
       <div className="pointer-events-none fixed inset-x-0 bottom-0 z-[60] flex flex-col items-center gap-2 p-4 sm:items-end sm:p-6" aria-live="polite">
         {toasts.map((t) => {
           const Icon = t.tone === "success" ? CircleCheck : t.tone === "error" ? CircleAlert : Info;
+          const accent = t.tone === "success" ? "bg-emerald-500" : t.tone === "error" ? "bg-rose-500" : "bg-brand-500";
           return (
-            <div key={t.id} className="pointer-events-auto flex w-full max-w-sm animate-pop-in items-start gap-3 rounded-2xl border border-slate-200/80 bg-white p-4 shadow-pop">
-              <Icon className={cn("mt-0.5 size-5 shrink-0", t.tone === "success" ? "text-emerald-600" : t.tone === "error" ? "text-rose-600" : "text-sky-600")} />
+            <div
+              key={t.id}
+              className="pointer-events-auto relative flex w-full max-w-sm animate-toast-in items-start gap-3 overflow-hidden rounded-2xl border border-black/5 bg-white/90 p-4 shadow-pop backdrop-blur-xl"
+            >
+              <span
+                className={cn(
+                  "grid size-8 shrink-0 place-items-center rounded-xl",
+                  t.tone === "success" ? "bg-emerald-50 text-emerald-600" : t.tone === "error" ? "bg-rose-50 text-rose-600" : "bg-brand-50 text-brand-600",
+                )}
+              >
+                <Icon className="size-[18px]" />
+              </span>
               <div className="min-w-0 flex-1">
                 <p className="text-sm font-semibold text-slate-900">{t.title}</p>
                 {t.body && <p className="mt-0.5 text-sm leading-relaxed text-slate-600">{t.body}</p>}
@@ -45,6 +56,11 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
               <button onClick={() => dismiss(t.id)} className="rounded-md p-0.5 text-slate-400 hover:text-slate-700" aria-label="Dismiss">
                 <X className="size-4" />
               </button>
+              <span
+                aria-hidden
+                className={cn("animate-countdown absolute inset-x-0 bottom-0 h-0.5 opacity-60", accent)}
+                style={{ animationDuration: `${t.tone === "error" ? 8000 : 5000}ms` }}
+              />
             </div>
           );
         })}

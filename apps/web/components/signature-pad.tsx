@@ -84,7 +84,7 @@ export function SignaturePad({
     <div>
       <div
         className={cn(
-          "relative overflow-hidden rounded-2xl border-2 border-dashed bg-white transition",
+          "relative overflow-hidden rounded-2xl border-2 border-dashed bg-[#fff] transition",
           invalid ? "border-rose-300 bg-rose-50/30" : empty ? "border-slate-300" : "border-brand-300",
         )}
       >
