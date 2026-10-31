@@ -231,6 +231,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const sections = NAV.map((s) => ({ ...s, items: s.items.filter((i) => visible(i, user)) })).filter((s) => s.items.length);
   const system = SYSTEM.filter((i) => visible(i, user) && user?.role !== "platform_admin");
   const current = activeHref(pathname);
+  // Phones get a thumb-reach bar instead of the hamburger; the platform console keeps its own menu.
+  const tabBar = !!user && user.role !== "platform_admin";
 
   async function logout() {
     await api.post("/auth/logout").catch(() => undefined);
@@ -311,7 +313,11 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           )}
         >
           <div className="mx-auto flex h-16 max-w-7xl items-center gap-3 px-4 sm:px-6 lg:px-8">
-            <button onClick={() => setDrawer(true)} className="-ml-1 rounded-lg p-2 text-slate-600 hover:bg-slate-100 lg:hidden" aria-label="Open menu">
+            <button
+              onClick={() => setDrawer(true)}
+              className={cn("-ml-1 rounded-lg p-2 text-slate-600 hover:bg-slate-100 lg:hidden", tabBar && "max-md:hidden")}
+              aria-label="Open menu"
+            >
               <Menu className="size-5" />
             </button>
             <Link href="/dashboard" className="lg:hidden" aria-label="Home">
@@ -321,7 +327,10 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             <div className="flex-1" />
             <button
               onClick={() => setPalette(true)}
-              className="flex h-10 items-center gap-2 rounded-xl border border-slate-200 bg-slate-50/80 px-3 text-sm text-slate-500 transition hover:border-slate-300 hover:bg-white md:w-72"
+              className={cn(
+                "flex h-10 items-center gap-2 rounded-xl border border-slate-200 bg-slate-50/80 px-3 text-sm text-slate-500 transition hover:border-slate-300 hover:bg-white md:w-72",
+                tabBar && "max-md:hidden",
+              )}
               aria-label="Search"
             >
               <Search className="size-4" />
@@ -337,13 +346,97 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             {user ? <UserMenu user={user} onLogout={logout} /> : <Skeleton className="size-9 rounded-full" />}
           </div>
         </header>
-        <main key={pathname} className="mx-auto max-w-7xl animate-page-in px-4 py-6 sm:px-6 lg:px-8 lg:py-8">
+        <main
+          key={pathname}
+          className={cn(
+            "mx-auto max-w-7xl animate-page-in px-4 py-6 sm:px-6 lg:px-8 lg:py-8",
+            tabBar && "max-md:pb-[calc(env(safe-area-inset-bottom)+104px)]",
+          )}
+        >
           {children}
         </main>
       </div>
 
+      {tabBar && user && <TabBar user={user} tasks={tasks} pathname={pathname} onSearch={() => setPalette(true)} onMenu={() => setDrawer(true)} />}
+
       {user && <CommandPalette open={palette} onClose={() => setPalette(false)} user={user} pages={PAGES} />}
     </div>
+  );
+}
+
+/** Bottom navigation on phones: the screens staff use most, search in the middle, and the full menu. */
+function TabBar({
+  user,
+  tasks,
+  pathname,
+  onSearch,
+  onMenu,
+}: {
+  user: SessionUser;
+  tasks?: Tasks;
+  pathname: string;
+  onSearch: () => void;
+  onMenu: () => void;
+}) {
+  const can = (p: Permission) => user.permissions.includes(p);
+  const under = (href: string) => pathname === href || pathname.startsWith(`${href}/`);
+  const left = [
+    can("loans:read") && { href: "/dashboard", label: "Home", icon: LayoutDashboard, active: under("/dashboard"), count: 0 },
+    can("loans:read") && { href: "/loans", label: "Loans", icon: HandCoins, active: under("/loans"), count: 0 },
+  ];
+  const right = [
+    can("applications:read")
+      ? { href: "/applications", label: "Applicants", icon: UserRoundPlus, active: under("/applications") && !under("/applications/new"), count: tasks?.newApplicants ?? 0 }
+      : can("customers:read") && { href: "/customers", label: "Borrowers", icon: Users, active: under("/customers"), count: tasks?.kyc ?? 0 },
+  ];
+  const tab = (t: (typeof left)[number]) =>
+    t && (
+      <Link
+        key={t.href}
+        href={t.href}
+        aria-current={t.active ? "page" : undefined}
+        className={cn("group flex flex-1 flex-col items-center gap-0.5 py-1.5 text-[10.5px] font-medium transition", t.active ? "text-brand-700" : "text-slate-500")}
+      >
+        <span
+          className={cn(
+            "relative grid h-7 w-12 place-items-center rounded-full transition duration-300 ease-[var(--ease-out-expo)] group-active:scale-90",
+            t.active && "bg-brand-100/80",
+          )}
+        >
+          <t.icon className="size-[19px]" />
+          {t.count > 0 && (
+            <span className="tabular absolute -right-0.5 -top-1 grid min-w-4 place-items-center rounded-full bg-brand-600 px-1 text-[10px] font-bold leading-4 text-white ring-2 ring-[var(--surface,#fff)]">
+              {t.count}
+            </span>
+          )}
+        </span>
+        {t.label}
+      </Link>
+    );
+  return (
+    <nav
+      aria-label="Main"
+      className="glass fixed inset-x-3 bottom-[max(0.75rem,env(safe-area-inset-bottom))] z-30 flex items-center rounded-[1.4rem] border border-line px-1.5 shadow-[0_18px_40px_-14px_rgb(28_16_11/0.35)] md:hidden"
+    >
+      {left.map(tab)}
+      <div className="flex flex-1 justify-center">
+        <button
+          type="button"
+          onClick={onSearch}
+          aria-label="Search borrowers, loans and pages"
+          className="sheen -mt-6 grid size-14 place-items-center rounded-full bg-gradient-to-b from-brand-500 to-brand-600 text-white shadow-glow ring-4 ring-[var(--background)] transition active:scale-90"
+        >
+          <Search className="size-[22px]" />
+        </button>
+      </div>
+      {right.map(tab)}
+      <button type="button" onClick={onMenu} className="group flex flex-1 flex-col items-center gap-0.5 py-1.5 text-[10.5px] font-medium text-slate-500">
+        <span className="grid h-7 w-12 place-items-center rounded-full transition group-active:scale-90">
+          <Menu className="size-[19px]" />
+        </span>
+        Menu
+      </button>
+    </nav>
   );
 }
 

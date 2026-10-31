@@ -32,7 +32,7 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
   return (
     <ToastContext.Provider value={push}>
       {children}
-      <div className="pointer-events-none fixed inset-x-0 bottom-0 z-[60] flex flex-col items-center gap-2 p-4 sm:items-end sm:p-6" aria-live="polite">
+      <div className="pointer-events-none fixed inset-x-0 bottom-0 z-[60] flex flex-col items-center gap-2 p-4 max-md:pb-[calc(env(safe-area-inset-bottom)+96px)] sm:items-end sm:p-6" aria-live="polite">
         {toasts.map((t) => {
           const Icon = t.tone === "success" ? CircleCheck : t.tone === "error" ? CircleAlert : Info;
           const accent = t.tone === "success" ? "bg-emerald-500" : t.tone === "error" ? "bg-rose-500" : "bg-brand-500";

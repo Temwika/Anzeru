@@ -186,7 +186,7 @@ export default function LoanPage() {
       </div>
 
       <Card className="mt-6">
-        <dl className="grid gap-5 p-5 sm:grid-cols-3 lg:grid-cols-6">
+        <dl className="grid grid-cols-2 gap-x-4 gap-y-5 p-5 sm:grid-cols-3 lg:grid-cols-6">
           <Detail label="Principal">{kwacha(loan.principal)}</Detail>
           <Detail label="Processing fee">{kwacha(loan.processingFee)}</Detail>
           <Detail label="Pricing">
@@ -463,9 +463,9 @@ function LoanNextStep({
 
 function Stat({ label, value, sub, tone }: { label: string; value: string; sub: string; tone?: "bad" }) {
   return (
-    <Card className="p-5">
-      <p className="text-sm text-slate-500">{label}</p>
-      <p className={`tabular mt-1 text-2xl font-semibold ${tone === "bad" ? "text-rose-700" : "text-slate-900"}`}>{value}</p>
+    <Card className="stat-card p-4 sm:p-5">
+      <p className="text-xs text-slate-500 sm:text-sm">{label}</p>
+      <p className={`tabular mt-1 text-[clamp(1.125rem,5.2vw,1.5rem)] font-semibold sm:text-2xl ${tone === "bad" ? "text-rose-700" : "text-slate-900"}`}>{value}</p>
       <p className="mt-1 text-xs text-slate-500">{sub}</p>
     </Card>
   );

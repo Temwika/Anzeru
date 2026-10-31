@@ -103,11 +103,11 @@ export default function Home() {
                 {label}
               </a>
             ))}
-            <Link href="/login" className="rounded-lg px-3 py-2 text-sm font-medium text-slate-200 hover:text-white">
+            <Link href="/login" className="whitespace-nowrap rounded-lg px-2 py-2 text-sm font-medium text-slate-200 hover:text-white sm:px-3">
               Sign in
             </Link>
             <ThemeToggle onDark />
-            <Link href={APPLY_HREF} className="rounded-lg bg-brand-500 px-4 py-2 text-sm font-semibold text-ink-950 hover:bg-brand-400">
+            <Link href={APPLY_HREF} className="whitespace-nowrap rounded-lg bg-brand-500 px-4 py-2 text-sm font-semibold text-ink-950 hover:bg-brand-400">
               Apply
             </Link>
           </nav>

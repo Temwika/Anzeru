@@ -181,7 +181,7 @@ export default function ApplicationPage() {
       <div className="grid gap-6 lg:grid-cols-3">
         <Card className="lg:col-span-2">
           <CardHeader title="Request" />
-          <dl className="grid gap-5 p-5 sm:grid-cols-3">
+          <dl className="grid grid-cols-2 gap-x-4 gap-y-5 p-5 sm:grid-cols-3">
             <Detail label="Amount">{kwacha(a.amount)}</Detail>
             <Detail label="Term">
               {a.term} {LABELS.frequency[a.product.repaymentFrequency].toLowerCase()} instalments
@@ -198,7 +198,7 @@ export default function ApplicationPage() {
           </dl>
           <div className="border-t border-slate-100 px-5 py-4">
             <h4 className="text-xs font-semibold uppercase tracking-wide text-slate-500">Affordability (monthly)</h4>
-            <dl className="mt-3 grid gap-5 sm:grid-cols-4">
+            <dl className="mt-3 grid grid-cols-2 gap-x-4 gap-y-5 sm:grid-cols-4">
               <Detail label="Income">{kwacha(a.monthlyIncome)}</Detail>
               <Detail label="Expenses">{kwacha(a.monthlyExpenses)}</Detail>
               <Detail label="Existing debt">{kwacha(a.existingDebtRepayments)}</Detail>

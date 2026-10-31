@@ -271,7 +271,7 @@ export function ErrorState({ error, onRetry }: { error: unknown; onRetry?: () =>
 /* ───────────────────────────── Forms ───────────────────────────── */
 
 export const inputClass =
-  "w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-sm text-slate-900 shadow-[0_1px_2px_rgb(15_23_42/0.04)] outline-none transition placeholder:text-slate-400 hover:border-slate-300 focus:border-brand-500 focus:ring-4 focus:ring-brand-500/15 disabled:bg-slate-50 aria-[invalid=true]:border-rose-400 aria-[invalid=true]:focus:ring-rose-500/15";
+  "w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-base text-slate-900 shadow-[0_1px_2px_rgb(15_23_42/0.04)] sm:text-sm outline-none transition placeholder:text-slate-400 hover:border-slate-300 focus:border-brand-500 focus:ring-4 focus:ring-brand-500/15 disabled:bg-slate-50 aria-[invalid=true]:border-rose-400 aria-[invalid=true]:focus:ring-rose-500/15";
 
 export function Field({
   label,
@@ -317,9 +317,36 @@ export function SearchInput({ value, onChange, placeholder, wide }: { value: str
 
 /* ───────────────────────────── Data display ───────────────────────────── */
 
-export function Table({ children, className }: { children: React.ReactNode; className?: string }) {
+/**
+ * On phones each row becomes a card (see .table-cards in globals.css): the first cell is the title
+ * and every other cell is a "Label … value" line. Labels come from the header cells, copied onto
+ * each body cell as data-label and kept current as rows change. Pass cards={false} to keep a
+ * plain horizontally scrolling table.
+ */
+export function Table({ children, className, cards = true }: { children: React.ReactNode; className?: string; cards?: boolean }) {
+  const ref = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const el = ref.current;
+    if (!el || !cards) return;
+    const label = () => {
+      const heads = [...el.querySelectorAll("thead th")].map((th) => th.textContent?.trim() ?? "");
+      el.querySelectorAll<HTMLTableRowElement>("tbody tr, tfoot tr").forEach((tr) => {
+        let col = 0;
+        for (const td of tr.cells) {
+          const text = td.colSpan > 1 ? "" : (heads[col] ?? "");
+          if (td.dataset.label !== text) td.dataset.label = text;
+          col += td.colSpan;
+        }
+      });
+    };
+    label();
+    // Watching child lists only: writing data-label is an attribute change, so this never loops.
+    const mo = new MutationObserver(label);
+    mo.observe(el, { childList: true, subtree: true });
+    return () => mo.disconnect();
+  }, [cards]);
   return (
-    <div className={cn("scroll-quiet overflow-x-auto", className)}>
+    <div ref={ref} className={cn("scroll-quiet overflow-x-auto", cards && "table-cards", className)}>
       <table className="w-full text-sm">{children}</table>
     </div>
   );
@@ -433,7 +460,8 @@ export function Modal({
     document.addEventListener("keydown", onKey);
     const prev = document.body.style.overflow;
     document.body.style.overflow = "hidden";
-    panel.current?.querySelector<HTMLElement>("input,select,textarea")?.focus();
+    // On touch screens focusing would throw the keyboard over the sheet before it's been read.
+    if (matchMedia("(pointer: fine)").matches) panel.current?.querySelector<HTMLElement>("input,select,textarea")?.focus();
     return () => {
       document.removeEventListener("keydown", onKey);
       document.body.style.overflow = prev;
@@ -450,7 +478,8 @@ export function Modal({
           wide ? "sm:max-w-2xl" : "sm:max-w-md",
         )}
       >
-        <div className="sticky top-0 z-10 flex items-start justify-between gap-4 border-b border-slate-100 bg-white/95 px-6 py-4 backdrop-blur">
+        <div className="sticky top-0 z-10 flex items-start justify-between gap-4 border-b border-slate-100 bg-white/95 px-5 pb-4 pt-5 backdrop-blur sm:px-6 sm:pt-4">
+          <span className="absolute left-1/2 top-2 h-1 w-10 -translate-x-1/2 rounded-full bg-slate-200 sm:hidden" aria-hidden />
           <div>
             <h2 className="font-display text-lg font-semibold text-slate-900">{title}</h2>
             {description && <p className="mt-0.5 text-sm leading-relaxed text-slate-500">{description}</p>}
@@ -459,7 +488,7 @@ export function Modal({
             <X className="size-5" />
           </button>
         </div>
-        <div className="px-6 py-5">{children}</div>
+        <div className="px-5 pb-[max(1.25rem,env(safe-area-inset-bottom))] pt-5 sm:px-6 sm:pb-5">{children}</div>
       </div>
     </div>
   );
@@ -469,7 +498,7 @@ export function Detail({ label, children }: { label: string; children: React.Rea
   return (
     <div className="min-w-0">
       <dt className="text-xs text-slate-500">{label}</dt>
-      <dd className="mt-1 text-sm font-medium text-slate-900">{children ?? "—"}</dd>
+      <dd className="mt-1 break-words text-sm font-medium text-slate-900">{children ?? "—"}</dd>
     </div>
   );
 }
@@ -582,16 +611,16 @@ export function StatCard({
     <Card
       onPointerMove={trackSpotlight}
       className={cn(
-        "spotlight group/stat h-full animate-rise overflow-hidden p-5 transition duration-300 ease-[var(--ease-out-expo)]",
+        "stat-card spotlight group/stat h-full animate-rise overflow-hidden p-4 transition duration-300 ease-[var(--ease-out-expo)] sm:p-5",
         href && "hover:-translate-y-1 hover:border-brand-200 hover:shadow-lift",
       )}
     >
       <div className="flex items-start justify-between gap-3">
-        <p className="text-[13px] font-medium text-slate-500">{label}</p>
+        <p className="text-xs font-medium leading-snug text-slate-500 sm:text-[13px]">{label}</p>
         {Icon && (
           <span
             className={cn(
-              "grid size-9 shrink-0 place-items-center rounded-xl transition duration-300 ease-[var(--ease-spring)] group-hover/stat:-rotate-6 group-hover/stat:scale-110",
+              "grid size-8 shrink-0 place-items-center rounded-xl sm:size-9 transition duration-300 ease-[var(--ease-spring)] group-hover/stat:-rotate-6 group-hover/stat:scale-110",
               iconTone,
             )}
           >
@@ -602,7 +631,7 @@ export function StatCard({
       {loading || value === undefined ? (
         <Skeleton className="mt-2 h-8 w-32" />
       ) : (
-        <div className="tabular mt-1 font-display text-[28px] font-bold leading-none tracking-tight text-slate-900">
+        <div className="tabular mt-1 font-display text-[clamp(1.125rem,5.2vw,1.75rem)] font-bold leading-none tracking-tight text-slate-900 sm:text-[28px]">
           <AnimatedValue value={value} />
         </div>
       )}

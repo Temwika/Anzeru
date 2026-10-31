@@ -231,6 +231,8 @@ body {
     radial-gradient(900px 400px at -10% -120px, rgb(254 240 199 / 0.35), transparent 70%),
     var(--background);
   background-attachment: fixed;
+  color: var(--foreground);
+  font-feature-settings: "cv11", "ss01";
   transition: background-color 300ms ease;
 }
 
@@ -240,8 +242,6 @@ body {
     radial-gradient(900px 400px at -10% -120px, rgb(220 149 18 / 0.05), transparent 70%),
     var(--background);
   background-attachment: fixed;
-  color: var(--foreground);
-  font-feature-settings: "cv11", "ss01";
 }
 
 ::selection {
@@ -259,6 +259,83 @@ body {
   select:focus-visible,
   textarea:focus-visible {
     outline: none;
+  }
+  /* Grid items default to min-width:auto, so one wide chart or table pushes the page sideways on a phone. */
+  .grid > * {
+    min-width: 0;
+  }
+}
+
+/* ───────── Phones ───────── */
+@media (max-width: 639.98px) {
+  /* Table rows as cards: the first cell is the title, the rest read "Label … value". */
+  .table-cards table,
+  .table-cards tbody,
+  .table-cards tfoot,
+  .table-cards tr {
+    display: block;
+  }
+  .table-cards thead {
+    display: none;
+  }
+  .table-cards tr {
+    padding: 14px 16px;
+  }
+  .table-cards td {
+    display: block;
+    padding: 3px 0;
+    white-space: normal;
+    text-align: right;
+    font-size: 13px;
+  }
+  .table-cards td.hidden {
+    display: none;
+  }
+  .table-cards td::before {
+    content: attr(data-label);
+    float: left;
+    margin-right: 12px;
+    padding-top: 1px;
+    font-size: 12px;
+    font-weight: 400;
+    color: var(--color-slate-500);
+  }
+  .table-cards td[data-label=""]::before,
+  .table-cards td:first-child::before {
+    content: none;
+  }
+  .table-cards td:first-child {
+    padding: 0 0 8px;
+    text-align: left;
+    font-size: 14px;
+  }
+  /* A bare number under a "#" header reads as "#3", not "3". */
+  .table-cards td:first-child[data-label="#"]::before {
+    content: "#";
+    float: none;
+    margin: 0;
+    font-size: inherit;
+    color: inherit;
+  }
+  .table-cards td:first-child[data-label="#"] {
+    font-weight: 600;
+  }
+  .table-cards td[colspan]:not([colspan="1"]) {
+    text-align: left;
+  }
+  /* Flex rows inside a value cell (avatar + name, icon + phone) sit right, beside their label. */
+  .table-cards td:not(:first-child) > :is(.flex, a.flex, button.flex) {
+    width: fit-content;
+    margin-left: auto;
+  }
+
+  /* Stat cards two to a row; an odd one out takes the full width. */
+  .grid:has(> .stat-card, > a > .stat-card) {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+  }
+  .grid:has(> .stat-card, > a > .stat-card) > :last-child:nth-child(odd) {
+    grid-column: 1 / -1;
   }
 }
 

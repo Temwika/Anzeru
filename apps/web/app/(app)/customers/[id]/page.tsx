@@ -164,7 +164,7 @@ export default function CustomerPage() {
       <div className="mt-6 grid gap-6 lg:grid-cols-3">
         <Card className="lg:col-span-2">
           <CardHeader title="Profile" />
-          <dl className="grid gap-5 p-5 sm:grid-cols-3">
+          <dl className="grid grid-cols-2 gap-x-4 gap-y-5 p-5 sm:grid-cols-3">
             <Detail label="NRC">{c.nrc}</Detail>
             <Detail label="Date of birth">{shortDate(c.dateOfBirth)}</Detail>
             <Detail label="Gender">{c.gender}</Detail>

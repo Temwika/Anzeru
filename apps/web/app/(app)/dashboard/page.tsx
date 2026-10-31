@@ -148,7 +148,7 @@ export default function DashboardPage() {
       <section
         onPointerMove={trackSpotlight}
         style={{ "--spot": "rgb(249 133 64 / 0.16)" } as React.CSSProperties}
-        className="spotlight relative mb-6 animate-rise overflow-hidden rounded-3xl bg-ink-950 p-6 text-white shadow-[0_30px_60px_-30px_rgb(28_16_11/0.6)] ring-1 ring-white/5 sm:p-8"
+        className="spotlight relative mb-6 animate-rise overflow-hidden rounded-3xl bg-ink-950 p-6 text-white shadow-[0_30px_60px_-30px_rgb(28_16_11/0.6)] ring-1 ring-white/5 sm:p-8 max-sm:rounded-[1.75rem] max-sm:p-5"
       >
         <div className="bg-grid pointer-events-none absolute inset-0 -z-10 opacity-60 [mask-image:radial-gradient(ellipse_at_top_right,black,transparent_75%)]" />
         <div className="pointer-events-none absolute -right-24 -top-32 -z-10 size-96 animate-float rounded-full bg-brand-500/30 blur-3xl" />
@@ -177,22 +177,22 @@ export default function DashboardPage() {
               )}
             </p>
             {data && (
-              <div className="stagger mt-6 flex flex-wrap gap-x-8 gap-y-3 text-sm">
-                <div className="border-l border-white/10 pl-4">
+              <div className="stagger mt-5 grid grid-cols-3 gap-2 text-sm sm:mt-6 sm:flex sm:flex-wrap sm:gap-x-8 sm:gap-y-3">
+                <div className="border-l border-white/10 pl-3 sm:pl-4">
                   <p className="text-slate-400">Active loans</p>
-                  <p className="tabular font-display text-2xl font-bold">
+                  <p className="tabular font-display text-xl font-bold sm:text-2xl">
                     <AnimatedValue value={data.kpis.activeLoans.toLocaleString("en-US")} />
                   </p>
                 </div>
-                <div className="border-l border-white/10 pl-4">
+                <div className="border-l border-white/10 pl-3 sm:pl-4">
                   <p className="text-slate-400">Portfolio</p>
-                  <p className="tabular font-display text-2xl font-bold">
+                  <p className="tabular font-display text-xl font-bold sm:text-2xl">
                     <AnimatedValue value={kwacha(data.kpis.outstandingPrincipal, { compact: true })} />
                   </p>
                 </div>
-                <div className="border-l border-white/10 pl-4">
+                <div className="border-l border-white/10 pl-3 sm:pl-4">
                   <p className="text-slate-400">PAR 30</p>
-                  <p className={cn("tabular font-display text-2xl font-bold", par30 > 10 ? "text-copper-400" : "text-brand-300")}>
+                  <p className={cn("tabular font-display text-xl font-bold sm:text-2xl", par30 > 10 ? "text-copper-400" : "text-brand-300")}>
                     <AnimatedValue value={pct(data.kpis.par30)} />
                   </p>
                 </div>
