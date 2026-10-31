@@ -11,12 +11,12 @@ import { AnimatedValue, trackSpotlight } from "./motion";
 type ButtonVariant = "primary" | "secondary" | "ghost" | "danger" | "soft" | "dark";
 const buttonStyles: Record<ButtonVariant, string> = {
   primary:
-    "sheen bg-gradient-to-b from-brand-500 to-brand-600 text-white shadow-[0_1px_0_rgb(255_255_255/0.22)_inset,0_1px_2px_rgb(164_63_12/0.45),0_4px_12px_-4px_rgb(242_107_29/0.5)] hover:brightness-[0.93] hover:shadow-[0_1px_0_rgb(255_255_255/0.22)_inset,0_1px_2px_rgb(164_63_12/0.45),0_10px_24px_-8px_rgb(242_107_29/0.65)] active:brightness-90",
+    "sheen bg-gradient-to-b from-brand-550 to-brand-700 text-white shadow-[0_1px_0_rgb(255_255_255/0.22)_inset,0_1px_2px_rgb(164_63_12/0.45),0_4px_12px_-4px_rgb(242_107_29/0.5)] hover:brightness-[0.93] hover:shadow-[0_1px_0_rgb(255_255_255/0.22)_inset,0_1px_2px_rgb(164_63_12/0.45),0_10px_24px_-8px_rgb(242_107_29/0.65)] active:brightness-90",
   secondary: "border border-slate-200 bg-white text-slate-700 shadow-card hover:border-slate-300 hover:bg-slate-50 hover:shadow-lift active:bg-slate-100",
   ghost: "text-slate-600 hover:bg-slate-900/[0.05] hover:text-slate-900",
   danger: "sheen bg-gradient-to-b from-rose-500 to-rose-600 text-white shadow-[0_1px_0_rgb(255_255_255/0.2)_inset,0_4px_12px_-4px_rgb(225_29_72/0.5)] hover:brightness-[0.93]",
   soft: "bg-brand-50 text-brand-800 ring-1 ring-inset ring-brand-100 hover:bg-brand-100",
-  dark: "sheen bg-ink-900 text-white shadow-[0_1px_0_rgb(255_255_255/0.1)_inset,0_4px_12px_-4px_rgb(28_16_11/0.5)] hover:bg-ink-800",
+  dark: "sheen bg-ink-900 text-white shadow-[0_1px_0_rgb(255_255_255/0.1)_inset,0_4px_12px_-4px_rgb(10_22_40/0.5)] hover:bg-ink-800",
 };
 const buttonSizes = { sm: "h-8 px-3 text-xs rounded-lg", md: "h-10 px-4 text-sm rounded-xl", lg: "h-12 px-6 text-[15px] rounded-xl" };
 
@@ -407,7 +407,7 @@ export function Tabs<T extends string>({ tabs, value, onChange }: { tabs: { valu
       {pill && (
         <span
           aria-hidden
-          className="absolute inset-y-1 rounded-lg bg-white shadow-[0_1px_2px_rgb(28_16_11/0.08),0_2px_8px_-2px_rgb(28_16_11/0.08)] transition-[left,width] duration-300 ease-[var(--ease-out-expo)]"
+          className="absolute inset-y-1 rounded-lg bg-white shadow-[0_1px_2px_rgb(10_22_40/0.08),0_2px_8px_-2px_rgb(10_22_40/0.08)] transition-[left,width] duration-300 ease-[var(--ease-out-expo)]"
           style={{ left: pill.left, width: pill.width }}
         />
       )}

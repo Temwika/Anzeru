@@ -20,6 +20,7 @@ export default function LoginPage() {
         <div className="bg-grid pointer-events-none absolute inset-0" />
         <div className="pointer-events-none absolute -left-32 -top-32 size-[520px] animate-float rounded-full bg-brand-500/20 blur-3xl" />
         <div className="pointer-events-none absolute -bottom-48 right-0 size-[460px] animate-float rounded-full bg-copper-500/15 blur-3xl [animation-delay:-3.5s]" />
+        <div className="pointer-events-none absolute -right-24 top-1/3 size-[420px] animate-float rounded-full bg-[#2f6be0]/25 blur-3xl [animation-delay:-2s]" />
         <div className="grain pointer-events-none absolute inset-0 opacity-[0.06]" />
 
         <Link href="/" className="relative">

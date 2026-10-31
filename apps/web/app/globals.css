@@ -3,44 +3,59 @@
 @custom-variant dark (&:where(.dark, .dark *));
 
 @theme {
-  /* Hairlines and quiet fills on warm surfaces (card borders, tab tracks, skeletons). */
-  --color-line: #ece6e1;
-  --color-line-soft: #f8f4f1;
+  /* Hairlines and quiet fills on cool surfaces (card borders, tab tracks, skeletons). */
+  --color-line: #e2e8f0;
+  --color-line-soft: #f1f4f9;
+
+  /*
+   * Neutrals: Tailwind slate, with the two text greys deepened so every grey clears WCAG AA:
+   * 500 (secondary text) is 5:1 on the page and 400 (icons, placeholders) 3.2:1 on cards.
+   */
+  --color-slate-400: #7b8aa1;
+  --color-slate-500: #5b6a80;
 
   --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
   --font-display: var(--font-jakarta), var(--font-inter), ui-sans-serif, system-ui, sans-serif;
   --font-mono: var(--font-jetbrains), ui-monospace, monospace;
 
-  /* Brand: Chilimbitso orange, from the logo. 600 carries white text at 4.5:1 for buttons. */
+  /*
+   * Palette: midnight navy for trust and structure, Chilimbitso orange (from the logo) for action,
+   * gold for highlights. Blue against orange is the pairing that stays distinct under every common
+   * form of colour blindness, and status is never told by colour alone (badges carry words).
+   *
+   * Brand orange. 600 carries white text at 4.9:1 for buttons; 700 is the text shade (6.4:1).
+   */
   --color-brand-50: #fff4ec;
   --color-brand-100: #ffe6d3;
   --color-brand-200: #fec9a5;
   --color-brand-300: #fda56d;
   --color-brand-400: #f98540;
   --color-brand-500: #f26b1d;
-  --color-brand-600: #c94f0c;
+  /* 550 tops button gradients: bright, yet white text in a 550→700 button clears 4.5:1. */
+  --color-brand-550: #d4500e;
+  --color-brand-600: #c2490a;
   --color-brand-700: #a43f0c;
   --color-brand-800: #833411;
   --color-brand-900: #6b2c11;
   --color-brand-950: #3a1406;
 
-  /* Gold accent for highlights such as top-up offers. */
+  /* Gold accent for highlights such as top-up offers. Text on gold fills is navy, not white. */
   --color-copper-50: #fffaeb;
   --color-copper-100: #fef0c7;
   --color-copper-400: #f4b740;
   --color-copper-500: #dc9512;
-  --color-copper-600: #b4760b;
+  --color-copper-600: #8a5a05;
 
-  /* Espresso: the logo lettering, used for dark surfaces. */
-  --color-ink-950: #1c100b;
-  --color-ink-900: #261711;
-  --color-ink-800: #352219;
-  --color-ink-700: #4a3024;
+  /* Midnight navy: the sidebar, hero bands and other dark surfaces. White on 950 is 18:1. */
+  --color-ink-950: #0a1628;
+  --color-ink-900: #0f1f38;
+  --color-ink-800: #17294a;
+  --color-ink-700: #22385f;
 
-  /* Warm-tinted, layered shadows so surfaces sit on the page rather than float above it. */
-  --shadow-card: 0 1px 2px rgb(28 16 11 / 0.04), 0 2px 6px -2px rgb(28 16 11 / 0.04);
-  --shadow-lift: 0 18px 40px -16px rgb(28 16 11 / 0.22), 0 4px 10px -4px rgb(28 16 11 / 0.06);
-  --shadow-pop: 0 32px 72px -20px rgb(28 16 11 / 0.4), 0 8px 20px -8px rgb(28 16 11 / 0.12);
+  /* Navy-tinted, layered shadows so surfaces sit on the page rather than float above it. */
+  --shadow-card: 0 1px 2px rgb(10 22 40 / 0.04), 0 2px 6px -2px rgb(10 22 40 / 0.04);
+  --shadow-lift: 0 18px 40px -16px rgb(10 22 40 / 0.22), 0 4px 10px -4px rgb(10 22 40 / 0.06);
+  --shadow-pop: 0 32px 72px -20px rgb(10 22 40 / 0.4), 0 8px 20px -8px rgb(10 22 40 / 0.12);
   --shadow-glow: 0 8px 24px -6px rgb(242 107 29 / 0.45);
 
   --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
@@ -106,7 +121,7 @@
 }
 
 :root {
-  --background: #f7f5f3;
+  --background: #f4f6fa;
   --foreground: #0f172a;
 }
 
@@ -115,32 +130,32 @@ html {
 }
 
 /*
- * Dark mode remaps the palette rather than restyling pages: slate inverts to warm greys, `white`
+ * Dark mode remaps the palette rather than restyling pages: slate inverts to navy greys, `white`
  * becomes the card surface, the light tints (50–200) become deep washes and the deep shades
  * (700–950) become light text. Mid tones (300–600) — solid fills, icons, the brand — stay put.
  * A page that must stay light (a printable receipt) opts out with data-force-light.
  */
 :root.dark:not(:has([data-force-light])) {
   color-scheme: dark;
-  --background: #100c0a;
-  --foreground: #f5efea;
-  --surface: #1a1411;
+  --background: #0a111e;
+  --foreground: #f1f4f9;
+  --surface: #111a2b;
 
   --color-white: var(--surface);
-  --color-line: #30261f;
-  --color-line-soft: #241c18;
+  --color-line: #24324d;
+  --color-line-soft: #18233a;
 
-  --color-slate-50: #1f1915;
-  --color-slate-100: #28201b;
-  --color-slate-200: #362c25;
-  --color-slate-300: #4b3f37;
-  --color-slate-400: #857870;
-  --color-slate-500: #a3968d;
-  --color-slate-600: #bfb3aa;
-  --color-slate-700: #d6ccc4;
-  --color-slate-800: #e8e0da;
-  --color-slate-900: #f5efea;
-  --color-slate-950: #fdf9f6;
+  --color-slate-50: #172237;
+  --color-slate-100: #1d2a42;
+  --color-slate-200: #283752;
+  --color-slate-300: #3a4b6a;
+  --color-slate-400: #7f8eab;
+  --color-slate-500: #9aa8bf;
+  --color-slate-600: #b7c2d4;
+  --color-slate-700: #d0d8e4;
+  --color-slate-800: #e3e8f0;
+  --color-slate-900: #f1f4f9;
+  --color-slate-950: #fafbfd;
 
   --color-brand-50: color-mix(in oklab, var(--color-brand-500) 12%, var(--surface));
   --color-brand-100: color-mix(in oklab, var(--color-brand-500) 20%, var(--surface));
@@ -197,7 +212,7 @@ html {
 }
 
 /*
- * Islands that are dark in both themes (the espresso sidebar, welcome band, login panel) and
+ * Islands that are dark in both themes (the navy sidebar, welcome band, login panel) and
  * anything set in white text keep true white and the original slate greys.
  */
 :root.dark :is([class*="bg-ink-"], [class*="text-white"]) {
@@ -208,13 +223,39 @@ html {
   --color-slate-100: oklch(96.8% 0.007 247.896);
   --color-slate-200: oklch(92.9% 0.013 255.508);
   --color-slate-300: oklch(86.9% 0.022 252.894);
-  --color-slate-400: oklch(70.4% 0.04 256.788);
-  --color-slate-500: oklch(55.4% 0.046 257.417);
+  --color-slate-400: #94a3b8;
+  --color-slate-500: #8794ab;
   --color-slate-600: oklch(44.6% 0.043 257.281);
   --color-slate-700: oklch(37.2% 0.044 257.287);
   --color-slate-800: oklch(27.9% 0.041 260.031);
   --color-slate-900: oklch(20.8% 0.042 265.755);
   --color-slate-950: oklch(12.9% 0.042 264.695);
+}
+/* On navy, the quiet greys go lighter rather than darker so labels stay readable (5:1 and up). */
+[class*="bg-ink-"] {
+  --color-slate-400: #94a3b8;
+  --color-slate-500: #8794ab;
+}
+
+/*
+ * Visitors who ask their system for more contrast get it: text greys step a shade darker,
+ * hairlines become real borders, and focus rings thicken.
+ */
+@media (prefers-contrast: more) {
+  :root {
+    --color-slate-400: #5b6a80;
+    --color-slate-500: #3f4b5e;
+    --color-line: #94a3b8;
+    --color-line-soft: #e2e8f0;
+  }
+  :root.dark:not(:has([data-force-light])) {
+    --color-slate-400: #b7c2d4;
+    --color-slate-500: #d0d8e4;
+    --color-line: #5b6a80;
+  }
+  :focus-visible {
+    outline-width: 3px;
+  }
 }
 
 /* The theme switch wipes in as a circle from the toggle (see setThemeMode). */
@@ -225,10 +266,10 @@ html {
 }
 
 body {
-  /* A faint warm wash at the top of every page, fixed so it doesn't scroll away. */
+  /* A faint wash at the top of every page, cool blue warming to the brand, fixed so it doesn't scroll away. */
   background:
-    radial-gradient(1200px 520px at 70% -180px, rgb(254 201 165 / 0.28), transparent 70%),
-    radial-gradient(900px 400px at -10% -120px, rgb(254 240 199 / 0.35), transparent 70%),
+    radial-gradient(1200px 520px at 75% -200px, rgb(254 215 185 / 0.32), transparent 70%),
+    radial-gradient(1000px 460px at -5% -140px, rgb(191 211 246 / 0.45), transparent 70%),
     var(--background);
   background-attachment: fixed;
   color: var(--foreground);
@@ -238,8 +279,8 @@ body {
 
 :root.dark:not(:has([data-force-light])) body {
   background:
-    radial-gradient(1200px 520px at 70% -180px, rgb(242 107 29 / 0.09), transparent 70%),
-    radial-gradient(900px 400px at -10% -120px, rgb(220 149 18 / 0.05), transparent 70%),
+    radial-gradient(1200px 520px at 75% -200px, rgb(242 107 29 / 0.08), transparent 70%),
+    radial-gradient(1000px 460px at -5% -140px, rgb(59 110 220 / 0.12), transparent 70%),
     var(--background);
   background-attachment: fixed;
 }

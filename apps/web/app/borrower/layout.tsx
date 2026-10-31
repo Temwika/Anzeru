@@ -3,13 +3,15 @@ import { BorrowerHeader, BorrowerTabBar } from "./header";
 import { Providers } from "@/components/providers";
 import { ConnectionBanner } from "@/components/pwa";
 import { Skeleton } from "@/components/ui";
+import { Watermark } from "@/components/watermark";
 
 export const metadata = { title: "My loans" };
 
 export default function BorrowerLayout({ children }: { children: React.ReactNode }) {
   return (
     <Providers>
-      <div className="min-h-dvh bg-slate-50">
+      <div className="min-h-dvh">
+        <Watermark className="top-16" />
         <Suspense fallback={<div className="h-16 border-b border-slate-200 bg-white" />}>
           <BorrowerHeader />
         </Suspense>

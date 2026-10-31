@@ -148,10 +148,11 @@ export default function DashboardPage() {
       <section
         onPointerMove={trackSpotlight}
         style={{ "--spot": "rgb(249 133 64 / 0.16)" } as React.CSSProperties}
-        className="spotlight relative mb-6 animate-rise overflow-hidden rounded-3xl bg-ink-950 p-6 text-white shadow-[0_30px_60px_-30px_rgb(28_16_11/0.6)] ring-1 ring-white/5 sm:p-8 max-sm:rounded-[1.75rem] max-sm:p-5"
+        className="spotlight relative mb-6 animate-rise overflow-hidden rounded-3xl bg-ink-950 p-6 text-white shadow-[0_30px_60px_-30px_rgb(10_22_40/0.6)] ring-1 ring-white/5 sm:p-8 max-sm:rounded-[1.75rem] max-sm:p-5"
       >
         <div className="bg-grid pointer-events-none absolute inset-0 -z-10 opacity-60 [mask-image:radial-gradient(ellipse_at_top_right,black,transparent_75%)]" />
-        <div className="pointer-events-none absolute -right-24 -top-32 -z-10 size-96 animate-float rounded-full bg-brand-500/30 blur-3xl" />
+        <div className="pointer-events-none absolute -right-24 -top-32 -z-10 size-96 animate-float rounded-full bg-brand-500/25 blur-3xl" />
+        <div className="pointer-events-none absolute -left-32 -top-40 -z-10 size-[28rem] animate-float rounded-full bg-[#2f6be0]/30 blur-3xl [animation-delay:-2s]" />
         <div className="pointer-events-none absolute -bottom-40 left-1/3 -z-10 size-80 animate-float rounded-full bg-copper-500/15 blur-3xl [animation-delay:-3.5s]" />
         <div className="grain pointer-events-none absolute inset-0 -z-10 opacity-[0.07]" />
         <div className="relative grid gap-8 lg:grid-cols-[1fr_1.15fr] lg:items-center">
@@ -221,7 +222,7 @@ export default function DashboardPage() {
                         <span
                           className={cn(
                             "grid size-9 shrink-0 place-items-center rounded-xl transition duration-300 ease-[var(--ease-spring)] group-hover:scale-110",
-                            a.urgent ? "bg-copper-500 text-white shadow-[0_6px_16px_-4px_rgb(220_149_18/0.6)]" : "bg-white/10 text-brand-300",
+                            a.urgent ? "bg-copper-500 text-ink-950 shadow-[0_6px_16px_-4px_rgb(220_149_18/0.6)]" : "bg-white/10 text-brand-300",
                           )}
                         >
                           <a.icon className="size-4" />

@@ -69,7 +69,7 @@ export function NextStep({
       </span>
       <div className="min-w-0 flex-1">
         <p className="flex items-center gap-2 text-sm font-semibold text-slate-900">
-          {tone === "you" && <span className="rounded-full bg-copper-500 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-white">Your turn</span>}
+          {tone === "you" && <span className="rounded-full bg-copper-500 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-ink-950">Your turn</span>}
           {title}
         </p>
         {body && <p className="mt-0.5 text-sm leading-relaxed text-slate-600">{body}</p>}

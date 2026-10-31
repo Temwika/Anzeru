@@ -50,12 +50,15 @@ import { usePathname, useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { cn } from "@/lib/cn";
 import { api, useApi, useSession } from "@/lib/api";
+import { clearDrafts } from "@/lib/draft";
+import { useIntentPrefetch } from "@/lib/prefetch";
 import { CommandPalette, type PaletteLink } from "./command-palette";
 import { ConnectionBanner, InstallAppItem } from "./pwa";
 import { ShortcutsHelp, useShortcuts } from "./shortcuts";
 import { Logo, LogoMark } from "./logo";
 import { ThemeSegmented, ThemeToggle } from "./theme";
 import { useToast } from "./toast";
+import { Watermark } from "./watermark";
 import { Avatar, Kbd, Skeleton } from "./ui";
 
 interface Tasks {
@@ -210,6 +213,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   useShortcuts(user, { onHelp: openHelp });
   const { data: tasks } = useApi<Tasks>(user && user.role !== "platform_admin" ? "/reports/tasks" : null, { refetchInterval: 30_000 });
   useNewApplicantAlert(tasks);
+  useIntentPrefetch();
 
   const [scrolled, setScrolled] = useState(false);
   useEffect(() => {
@@ -245,6 +249,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   async function logout() {
     await api.post("/auth/logout").catch(() => undefined);
     queryClient.clear();
+    clearDrafts();
     router.replace("/login");
   }
 
@@ -302,14 +307,15 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="min-h-screen">
-      <aside className="fixed inset-y-0 left-0 z-30 hidden w-64 flex-col overflow-hidden bg-ink-950 dark:border-r dark:border-white/[0.06] bg-[radial-gradient(420px_260px_at_0%_0%,rgb(242_107_29/0.14),transparent_70%)] lg:flex">
+      <Watermark className="top-16 lg:left-64" />
+      <aside className="fixed inset-y-0 left-0 z-30 hidden w-64 flex-col overflow-hidden bg-ink-950 dark:border-r dark:border-white/[0.06] bg-[radial-gradient(420px_260px_at_0%_0%,rgb(242_107_29/0.14),transparent_70%),radial-gradient(420px_340px_at_100%_100%,rgb(47_107_224/0.2),transparent_70%)] lg:flex">
         {sidebar()}
       </aside>
 
       {drawer && (
         <div className="fixed inset-0 z-40 lg:hidden">
           <div className="absolute inset-0 animate-fade-in bg-ink-950/60" onClick={() => setDrawer(false)} />
-          <aside className="absolute inset-y-0 left-0 flex w-72 max-w-[85vw] animate-slide-in-left flex-col bg-ink-950 bg-[radial-gradient(420px_260px_at_0%_0%,rgb(242_107_29/0.14),transparent_70%)] pb-[env(safe-area-inset-bottom)] pt-[env(safe-area-inset-top)]">
+          <aside className="absolute inset-y-0 left-0 flex w-72 max-w-[85vw] animate-slide-in-left flex-col bg-ink-950 bg-[radial-gradient(420px_260px_at_0%_0%,rgb(242_107_29/0.14),transparent_70%),radial-gradient(420px_340px_at_100%_100%,rgb(47_107_224/0.2),transparent_70%)] pb-[env(safe-area-inset-bottom)] pt-[env(safe-area-inset-top)]">
             {sidebar(() => setDrawer(false))}
           </aside>
         </div>
@@ -320,7 +326,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         <header
           className={cn(
             "glass sticky top-0 z-20 border-b transition-[box-shadow,border-color] duration-300",
-            scrolled ? "border-line shadow-[0_8px_24px_-16px_rgb(28_16_11/0.25)]" : "border-transparent",
+            scrolled ? "border-line shadow-[0_8px_24px_-16px_rgb(10_22_40/0.25)]" : "border-transparent",
           )}
         >
           <div className="mx-auto flex h-16 max-w-7xl items-center gap-3 px-4 sm:px-6 lg:px-8">
@@ -429,7 +435,7 @@ function TabBar({
   return (
     <nav
       aria-label="Main"
-      className="glass fixed inset-x-3 bottom-[max(0.75rem,env(safe-area-inset-bottom))] z-30 flex items-center rounded-[1.4rem] border border-line px-1.5 shadow-[0_18px_40px_-14px_rgb(28_16_11/0.35)] md:hidden"
+      className="glass fixed inset-x-3 bottom-[max(0.75rem,env(safe-area-inset-bottom))] z-30 flex items-center rounded-[1.4rem] border border-line px-1.5 shadow-[0_18px_40px_-14px_rgb(10_22_40/0.35)] md:hidden"
     >
       {left.map(tab)}
       <div className="flex flex-1 justify-center">
@@ -560,12 +566,12 @@ function NavLink({ item, active, count = 0, compact }: { item: NavItem; active: 
         (item.highlight ? (
           <span className="relative flex">
             <span className="absolute inset-0 animate-ping rounded-full bg-brand-400 opacity-40" />
-            <span className="tabular relative rounded-full bg-brand-500 px-2 py-px text-[11px] font-bold text-white shadow-[0_0_12px_rgb(242_107_29/0.6)]">
+            <span className="tabular relative rounded-full bg-brand-600 px-2 py-px text-[11px] font-bold text-white shadow-[0_0_12px_rgb(242_107_29/0.6)]">
               {count} new
             </span>
           </span>
         ) : (
-          <span className="tabular rounded-full bg-brand-500 px-1.5 py-px text-[11px] font-semibold text-white">{count}</span>
+          <span className="tabular rounded-full bg-brand-600 px-1.5 py-px text-[11px] font-semibold text-white">{count}</span>
         ))}
     </Link>
   );
@@ -667,7 +673,7 @@ function MenuLink({
         <span className="block text-sm font-medium text-slate-900">{title}</span>
         {body && <span className="block text-xs leading-relaxed text-slate-500">{body}</span>}
       </span>
-      {count !== undefined && <span className="tabular mt-1 rounded-full bg-copper-500 px-2 py-px text-xs font-semibold text-white">{count}</span>}
+      {count !== undefined && <span className="tabular mt-1 rounded-full bg-copper-500 px-2 py-px text-xs font-semibold text-ink-950">{count}</span>}
     </Link>
   );
 }
@@ -733,7 +739,7 @@ function Inbox({ tasks, user }: { tasks?: Tasks; user: SessionUser }) {
         <span className="relative grid size-10 place-items-center rounded-xl text-slate-500 transition hover:bg-slate-100 hover:text-slate-900">
           <Bell className="size-5" />
           {!!tasks?.total && (
-            <span className="tabular absolute right-1 top-1 grid min-w-4 place-items-center rounded-full bg-copper-500 px-1 text-[10px] font-bold leading-4 text-white ring-2 ring-[var(--surface,#fff)]">
+            <span className="tabular absolute right-1 top-1 grid min-w-4 place-items-center rounded-full bg-copper-500 px-1 text-[10px] font-bold leading-4 text-ink-950 ring-2 ring-[var(--surface,#fff)]">
               {tasks.total}
             </span>
           )}

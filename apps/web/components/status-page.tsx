@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { Logo } from "./logo";
+import { Watermark } from "./watermark";
 
 /**
  * The shared frame for "not found" and "something went wrong": the brand, a large quiet numeral,
@@ -36,7 +37,8 @@ export function StatusPage({
   );
   if (inline) return <div className="grid min-h-[60vh] place-items-center py-10">{content}</div>;
   return (
-    <div className="relative flex min-h-dvh flex-col overflow-hidden bg-[var(--background)]">
+    <div className="relative flex min-h-dvh flex-col overflow-hidden">
+      <Watermark />
       <div
         aria-hidden
         className="pointer-events-none absolute left-1/2 top-[-20%] size-[42rem] -translate-x-1/2 rounded-full bg-[radial-gradient(closest-side,rgb(242_107_29/0.16),transparent)] animate-float"

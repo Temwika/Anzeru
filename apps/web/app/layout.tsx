@@ -15,7 +15,7 @@ export const metadata: Metadata = {
   appleWebApp: { capable: true, title: "Chilimbitso", statusBarStyle: "black-translucent" },
 };
 
-export const viewport: Viewport = { themeColor: "#1c100b" };
+export const viewport: Viewport = { themeColor: "#0a1628" };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (

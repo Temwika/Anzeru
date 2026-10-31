@@ -94,7 +94,7 @@ function Copy({ r, copy }: { r: Receipt; copy: string }) {
         <div className="flex items-center gap-3">
           <LogoMark className="size-16" />
           <div>
-            <p className="font-display text-xl font-extrabold uppercase leading-none tracking-tight text-[#2b130b]">{name}</p>
+            <p className="font-display text-xl font-extrabold uppercase leading-none tracking-tight text-[#0a1628]">{name}</p>
             {r.company.tagline && <p className="mt-1 text-sm italic text-brand-700">{r.company.tagline}</p>}
             <p className="mt-2 text-sm font-semibold uppercase tracking-wide text-slate-700">Loan repayment receipt</p>
           </div>
@@ -193,7 +193,7 @@ function Copy({ r, copy }: { r: Receipt; copy: string }) {
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <div className="mt-5">
-      <h2 className="mb-2 rounded-md bg-[#2b130b] px-3 py-1.5 text-xs font-bold uppercase tracking-wider text-white print:bg-[#2b130b] print:[-webkit-print-color-adjust:exact] print:[print-color-adjust:exact]">
+      <h2 className="mb-2 rounded-md bg-[#0a1628] px-3 py-1.5 text-xs font-bold uppercase tracking-wider text-white print:bg-[#0a1628] print:[-webkit-print-color-adjust:exact] print:[print-color-adjust:exact]">
         {title}
       </h2>
       {children}

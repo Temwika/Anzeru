@@ -7,13 +7,17 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import type { z } from "zod";
+import { DraftNotice } from "@/components/draft-notice";
 import { PhotoCapture } from "@/components/photo-capture";
 import { useToast } from "@/components/toast";
 import { Button, Card, Field, inputClass, Notice, PageHeader, Stepper, type Step } from "@/components/ui";
 import { api, useApi, useSession } from "@/lib/api";
+import { useFormDraft } from "@/lib/draft";
 import { kwacha, shortDate } from "@/lib/format";
 
 type Values = z.input<typeof customerCreateSchema>;
+
+const DEFAULTS: Partial<Values> = { gender: "female" };
 
 const STEPS: { label: string; description: string; fields: (keyof Values)[] }[] = [
   { label: "Identity", description: "Details & NRC photo", fields: ["firstName", "lastName", "nrc", "dateOfBirth", "gender", "branchId"] },
@@ -36,6 +40,7 @@ export default function NewCustomerPage() {
   const [nrcFront, setNrcFront] = useState<File | null>(null);
   const [nrcBack, setNrcBack] = useState<File | null>(null);
   const [nrcMissing, setNrcMissing] = useState(false);
+  const form = useForm<Values>({ resolver: zodResolver(customerCreateSchema), defaultValues: DEFAULTS, mode: "onTouched" });
   const {
     register,
     handleSubmit,
@@ -43,7 +48,8 @@ export default function NewCustomerPage() {
     getValues,
     setError: setFieldError,
     formState: { errors, isSubmitting },
-  } = useForm<Values>({ resolver: zodResolver(customerCreateSchema), defaultValues: { gender: "female" }, mode: "onTouched" });
+  } = form;
+  const draft = useFormDraft("new-borrower", form, user?.id);
 
   const allowed = branches?.filter((b) => !user || ["institution_admin", "credit_manager"].includes(user.role) || user.branchIds.includes(b.id));
   const f = (name: keyof Values) => ({ ...register(name), "aria-invalid": !!errors[name], className: inputClass });
@@ -62,6 +68,7 @@ export default function NewCustomerPage() {
     setError(null);
     try {
       const c = await api.post<{ id: string; warnings: string[] }>("/customers", values);
+      draft.clear();
       const photos = [nrcFront, nrcBack].filter((p): p is File => !!p);
       const saved = await Promise.allSettled(
         photos.map((p) => {
@@ -106,6 +113,17 @@ export default function NewCustomerPage() {
 
       <div className="grid gap-6 lg:grid-cols-[1fr_300px]">
         <form onSubmit={onSubmit} noValidate>
+          {draft.restoredAt && (
+            <DraftNotice
+              at={draft.restoredAt}
+              note="Retake the NRC photo."
+              onDiscard={() => {
+                draft.discard(DEFAULTS);
+                setStep(0);
+              }}
+              onDismiss={draft.dismiss}
+            />
+          )}
           <Card className="overflow-hidden">
             <div className="border-b border-slate-100 px-4 py-5 sm:px-10">
               <Stepper steps={steps} />

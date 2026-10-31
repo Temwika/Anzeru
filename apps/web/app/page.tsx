@@ -117,6 +117,7 @@ export default function Home() {
       <section className="relative overflow-hidden bg-ink-950 text-white">
         <div className="bg-grid pointer-events-none absolute inset-0" />
         <div className="pointer-events-none absolute -bottom-40 left-10 size-[420px] rounded-full bg-copper-500/10 blur-3xl" />
+        <div className="pointer-events-none absolute -left-40 -top-32 size-[520px] rounded-full bg-[#2f6be0]/25 blur-3xl" />
         <div className="pointer-events-none absolute -top-40 right-0 size-[600px] rounded-full bg-brand-500/20 blur-3xl" />
         <div className="relative mx-auto grid max-w-6xl items-center gap-14 px-4 py-16 sm:px-6 lg:grid-cols-[1.15fr_1fr] lg:py-24">
           <div>
@@ -207,7 +208,7 @@ export default function Home() {
             </dl>
             <Link
               href={APPLY_HREF}
-              className="mt-8 inline-flex items-center gap-2 rounded-xl bg-brand-500 px-6 py-3.5 text-sm font-semibold text-white hover:bg-brand-600"
+              className="mt-8 inline-flex items-center gap-2 rounded-xl bg-brand-600 px-6 py-3.5 text-sm font-semibold text-white hover:bg-brand-700"
             >
               Apply for a Marketeers Loan <ArrowRight className="size-4" />
             </Link>
@@ -219,7 +220,7 @@ export default function Home() {
             </div>
             <table className="tabular w-full text-sm">
               <thead>
-                <tr className="bg-brand-500 text-left text-xs font-semibold uppercase tracking-wide text-white">
+                <tr className="bg-brand-600 text-left text-xs font-semibold uppercase tracking-wide text-white">
                   <th className="px-6 py-2.5">Loan amount</th>
                   <th className="px-6 py-2.5 text-right">Daily payment</th>
                   <th className="px-6 py-2.5 text-right">Total to repay</th>

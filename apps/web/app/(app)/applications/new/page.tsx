@@ -25,11 +25,13 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import { useFieldArray, useForm, useWatch } from "react-hook-form";
 import type { z } from "zod";
+import { DraftNotice } from "@/components/draft-notice";
 import { PhotoCapture } from "@/components/photo-capture";
 import { SignaturePad } from "@/components/signature-pad";
 import { useToast } from "@/components/toast";
 import { Avatar, Badge, Button, Card, Field, inputClass, Notice, PageHeader, ProgressBar, Skeleton, StatusBadge, Stepper, type Step } from "@/components/ui";
-import { api, qs, useApi, usePage } from "@/lib/api";
+import { api, qs, useApi, usePage, useSession } from "@/lib/api";
+import { useFormDraft } from "@/lib/draft";
 import { cn } from "@/lib/cn";
 import { kwacha, pct } from "@/lib/format";
 
@@ -97,6 +99,9 @@ export default function NewApplicationPage() {
   const [submitting, setSubmitting] = useState(false);
   const { data: products } = useApi<Product[]>("/loan-products?active=true");
 
+  const { data: user } = useSession();
+  const defaults: Partial<Values> = { customerId: presetCustomer, existingDebtRepayments: "0", guarantors: [], collateral: [] };
+  const form = useForm<Values>({ resolver: zodResolver(applicationCreateSchema), defaultValues: defaults, mode: "onTouched" });
   const {
     register,
     handleSubmit,
@@ -105,11 +110,9 @@ export default function NewApplicationPage() {
     trigger,
     getValues,
     formState: { errors },
-  } = useForm<Values>({
-    resolver: zodResolver(applicationCreateSchema),
-    defaultValues: { customerId: presetCustomer, existingDebtRepayments: "0", guarantors: [], collateral: [] },
-    mode: "onTouched",
-  });
+  } = form;
+  // One draft per starting point, so opening "New loan" from a borrower never loads another client's form.
+  const draft = useFormDraft(`new-loan:${presetCustomer || "any"}`, form, user?.id);
   const guarantors = useFieldArray({ control, name: "guarantors" });
   const collateral = useFieldArray({ control, name: "collateral" });
   // useWatch rather than watch(): subscriptions the React Compiler can optimise.
@@ -214,6 +217,7 @@ export default function NewApplicationPage() {
         "/applications",
         values,
       );
+      draft.clear();
       // Photos go up once the application exists, matched to guarantors and items in the order they were entered.
       const uploads: Promise<unknown>[] = [];
       const send = (docType: string, file: File, ref: { guarantorId?: string; collateralId?: string }) => {
@@ -270,6 +274,17 @@ export default function NewApplicationPage() {
         description="Capture the client, the loan, the guarantor and the collateral in one sitting. Nothing is lost between steps."
       />
 
+      {draft.restoredAt && (
+        <DraftNotice
+          at={draft.restoredAt}
+          note="Photos and signatures need retaking."
+          onDiscard={() => {
+            draft.discard(defaults);
+            setStep(0);
+          }}
+          onDismiss={draft.dismiss}
+        />
+      )}
       <form onSubmit={onSubmit} noValidate className="grid gap-6 lg:grid-cols-[1fr_340px]">
         <Card className="overflow-hidden">
           <div className="overflow-x-auto border-b border-slate-100 px-4 py-5 sm:px-8">

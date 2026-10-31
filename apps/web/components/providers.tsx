@@ -12,7 +12,8 @@ export function Providers({ children }: { children: React.ReactNode }) {
         defaultOptions: {
           queries: {
             staleTime: 15_000,
-            refetchOnWindowFocus: false,
+            // Coming back to the tab shows current figures without a reload; cached data stays on screen meanwhile.
+            refetchOnWindowFocus: true,
             retry: (count, err) => !(err instanceof ApiError && err.status < 500) && count < 2,
           },
         },

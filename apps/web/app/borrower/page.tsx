@@ -73,7 +73,7 @@ export default function BorrowerHome() {
           href={`/borrower/apply?product=${topUp.productId}`}
           className="group flex items-center gap-4 rounded-2xl border border-copper-100 bg-gradient-to-r from-copper-50 to-white p-5 transition hover:shadow-lift"
         >
-          <span className="grid size-12 shrink-0 place-items-center rounded-2xl bg-copper-500 text-white">
+          <span className="grid size-12 shrink-0 place-items-center rounded-2xl bg-copper-500 text-ink-950">
             <Sparkles className="size-6" />
           </span>
           <span className="min-w-0 flex-1">
