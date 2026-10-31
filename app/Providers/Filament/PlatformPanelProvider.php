@@ -2,6 +2,7 @@
 
 namespace App\Providers\Filament;
 
+use App\Filament\Branding;
 use Filament\Http\Middleware\Authenticate;
 use Filament\Http\Middleware\AuthenticateSession;
 use Filament\Http\Middleware\DisableBladeIconComponents;
@@ -22,12 +23,10 @@ class PlatformPanelProvider extends PanelProvider
 {
     public function panel(Panel $panel): Panel
     {
-        return $panel
+        return Branding::apply($panel, 'Platform console')
             ->id('platform')
             ->path('platform')
             ->login()
-            ->colors(['primary' => Color::Slate])
-            ->brandName('Chilimbitso Platform')
             ->discoverResources(in: app_path('Filament/Platform/Resources'), for: 'App\\Filament\\Platform\\Resources')
             ->discoverPages(in: app_path('Filament/Platform/Pages'), for: 'App\\Filament\\Platform\\Pages')
             ->pages([Pages\Dashboard::class])

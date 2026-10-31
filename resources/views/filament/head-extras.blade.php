@@ -1,6 +1,6 @@
 {{-- PWA --}}
 <link rel="manifest" href="/manifest.webmanifest">
-<meta name="theme-color" content="#052e16">
+<meta name="theme-color" content="#0a1628">
 <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
 
 {{-- Dark mode: runs before first paint to avoid flash --}}

@@ -2,6 +2,7 @@
 
 namespace App\Providers\Filament;
 
+use App\Filament\Branding;
 use App\Http\Middleware\SetTenant;
 use Filament\Http\Middleware\Authenticate;
 use Filament\Http\Middleware\AuthenticateSession;
@@ -23,13 +24,11 @@ class AdminPanelProvider extends PanelProvider
 {
     public function panel(Panel $panel): Panel
     {
-        return $panel
+        return Branding::apply($panel, 'Staff workspace')
             ->default()
             ->id('app')
             ->path('app')
             ->login()
-            ->colors(['primary' => Color::Emerald])
-            ->brandName('Chilimbitso')
             ->renderHook('panels::head.end', fn () => view('filament.head-extras'))
             ->renderHook('panels::body.end', fn () => view('filament.body-extras'))
             ->discoverResources(in: app_path('Filament/App/Resources'), for: 'App\\Filament\\App\\Resources')

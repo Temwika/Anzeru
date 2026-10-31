@@ -2,6 +2,7 @@
 
 namespace App\Providers\Filament;
 
+use App\Filament\Branding;
 use App\Http\Middleware\SetTenant;
 use Filament\Http\Middleware\Authenticate;
 use Filament\Http\Middleware\AuthenticateSession;
@@ -22,12 +23,10 @@ class BorrowerPanelProvider extends PanelProvider
 {
     public function panel(Panel $panel): Panel
     {
-        return $panel
+        return Branding::apply($panel, 'My account')
             ->id('borrower')
             ->path('borrower')
             ->login()
-            ->colors(['primary' => Color::Blue])
-            ->brandName('Chilimbitso — My Account')
             ->discoverPages(in: app_path('Filament/Borrower/Pages'), for: 'App\\Filament\\Borrower\\Pages')
             ->discoverWidgets(in: app_path('Filament/Borrower/Widgets'), for: 'App\\Filament\\Borrower\\Widgets')
             ->middleware([
