@@ -22,6 +22,45 @@ class CustomerResource extends Resource
     protected static ?string $navigationGroup = 'Portfolio';
     protected static ?int $navigationSort = 1;
 
+    /* Ctrl+K search: by name, customer number, NRC or phone. */
+    public static function getGloballySearchableAttributes(): array
+    {
+        return ['first_name', 'last_name', 'customer_number', 'nrc', 'phone'];
+    }
+
+    public static function getGlobalSearchResultTitle(\Illuminate\Database\Eloquent\Model $record): string
+    {
+        return "{$record->first_name} {$record->last_name}";
+    }
+
+    public static function getGlobalSearchResultDetails(\Illuminate\Database\Eloquent\Model $record): array
+    {
+        return ['Number' => $record->customer_number, 'Phone' => $record->phone, 'KYC' => ucfirst($record->kyc_status)];
+    }
+
+    public static function getGlobalSearchResultUrl(\Illuminate\Database\Eloquent\Model $record): string
+    {
+        return static::getUrl('view', ['record' => $record]);
+    }
+
+    /** Borrowers waiting for KYC review, so the queue is visible from anywhere. */
+    public static function getNavigationBadge(): ?string
+    {
+        $n = Customer::where('kyc_status', 'pending')->count();
+
+        return $n ? (string) $n : null;
+    }
+
+    public static function getNavigationBadgeColor(): ?string
+    {
+        return 'warning';
+    }
+
+    public static function getNavigationBadgeTooltip(): ?string
+    {
+        return 'Waiting for KYC review';
+    }
+
     public static function form(Form $form): Form
     {
         return $form->schema([

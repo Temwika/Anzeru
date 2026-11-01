@@ -22,6 +22,54 @@ class LoanApplicationResource extends Resource
     protected static ?string $navigationGroup = 'Portfolio';
     protected static ?int $navigationSort = 2;
 
+    /* Ctrl+K search: by application number or the borrower's name. */
+    public static function getGloballySearchableAttributes(): array
+    {
+        return ['application_number', 'customer.first_name', 'customer.last_name'];
+    }
+
+    public static function getGlobalSearchResultTitle(\Illuminate\Database\Eloquent\Model $record): string
+    {
+        return $record->application_number;
+    }
+
+    public static function getGlobalSearchResultDetails(\Illuminate\Database\Eloquent\Model $record): array
+    {
+        return [
+            'Borrower' => trim(($record->customer?->first_name ?? '') . ' ' . ($record->customer?->last_name ?? '')),
+            'Amount' => 'K ' . number_format((float) $record->amount, 2),
+            'Status' => ucfirst(str_replace('_', ' ', $record->status)),
+        ];
+    }
+
+    public static function getGlobalSearchEloquentQuery(): \Illuminate\Database\Eloquent\Builder
+    {
+        return parent::getGlobalSearchEloquentQuery()->with('customer');
+    }
+
+    public static function getGlobalSearchResultUrl(\Illuminate\Database\Eloquent\Model $record): string
+    {
+        return static::getUrl('view', ['record' => $record]);
+    }
+
+    /** Applications submitted and waiting for a credit decision. */
+    public static function getNavigationBadge(): ?string
+    {
+        $n = LoanApplication::where('status', 'submitted')->count();
+
+        return $n ? (string) $n : null;
+    }
+
+    public static function getNavigationBadgeColor(): ?string
+    {
+        return 'primary';
+    }
+
+    public static function getNavigationBadgeTooltip(): ?string
+    {
+        return 'Waiting for a decision';
+    }
+
     public static function form(Form $form): Form
     {
         return $form->schema([

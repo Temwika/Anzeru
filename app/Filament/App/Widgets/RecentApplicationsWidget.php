@@ -27,11 +27,13 @@ class RecentApplicationsWidget extends TableWidget
                 TextColumn::make('application_number')->label('App #')->fontFamily('mono'),
                 TextColumn::make('customer.full_name')->label('Customer'),
                 TextColumn::make('product.name')->label('Product'),
-                TextColumn::make('amount_requested')
+                // The column is `amount`; `amount_requested` doesn't exist, so the column showed blank.
+                TextColumn::make('amount')
                     ->label('Amount')
-                    ->money('MWK')
+                    ->formatStateUsing(fn ($state) => 'K ' . number_format((float) $state, 2))
+                    ->fontFamily('mono')
                     ->alignEnd(),
-                TextColumn::make('status')->badge()->color(fn ($state) => match ($state) {
+                TextColumn::make('status')->badge()->formatStateUsing(fn ($state) => ucfirst(str_replace('_', ' ', $state)))->color(fn ($state) => match ($state) {
                     'submitted' => 'warning',
                     'approved'  => 'success',
                     'rejected'  => 'danger',

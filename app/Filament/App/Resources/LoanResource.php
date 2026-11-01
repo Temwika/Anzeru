@@ -18,6 +18,36 @@ class LoanResource extends Resource
     protected static ?string $navigationGroup = 'Portfolio';
     protected static ?int $navigationSort = 3;
 
+    /* Ctrl+K search: by loan number or the borrower's name. */
+    public static function getGloballySearchableAttributes(): array
+    {
+        return ['loan_number', 'customer.first_name', 'customer.last_name'];
+    }
+
+    public static function getGlobalSearchResultTitle(\Illuminate\Database\Eloquent\Model $record): string
+    {
+        return $record->loan_number;
+    }
+
+    public static function getGlobalSearchResultDetails(\Illuminate\Database\Eloquent\Model $record): array
+    {
+        return [
+            'Borrower' => trim(($record->customer?->first_name ?? '') . ' ' . ($record->customer?->last_name ?? '')),
+            'Principal' => 'K ' . number_format((float) $record->principal, 2),
+            'Status' => ucfirst(str_replace('_', ' ', $record->status)),
+        ];
+    }
+
+    public static function getGlobalSearchEloquentQuery(): \Illuminate\Database\Eloquent\Builder
+    {
+        return parent::getGlobalSearchEloquentQuery()->with('customer');
+    }
+
+    public static function getGlobalSearchResultUrl(\Illuminate\Database\Eloquent\Model $record): string
+    {
+        return static::getUrl('view', ['record' => $record]);
+    }
+
     public static function form(Form $form): Form
     {
         return $form->schema([]); // Loans are created from approved applications only
