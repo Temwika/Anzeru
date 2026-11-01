@@ -78,6 +78,7 @@ class LoanResource extends Resource
                 Tables\Columns\TextColumn::make('disbursed_on')->date()->sortable(),
                 Tables\Columns\TextColumn::make('maturity_date')->date()->sortable(),
                 Tables\Columns\BadgeColumn::make('status')
+                    ->formatStateUsing(fn ($state) => ucfirst(str_replace('_', ' ', $state)))
                     ->colors([
                         'warning' => 'pending_disbursement',
                         'success' => 'active',

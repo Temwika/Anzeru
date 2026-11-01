@@ -15,6 +15,8 @@ class PaymentResource extends Resource
     protected static ?string $model = Payment::class;
     protected static ?string $navigationIcon = 'heroicon-o-credit-card';
     protected static ?string $navigationLabel = 'Repayments';
+    protected static ?string $modelLabel = 'repayment';
+    protected static ?string $pluralModelLabel = 'repayments';
     protected static ?string $navigationGroup = 'Portfolio';
     protected static ?int $navigationSort = 4;
 
@@ -37,6 +39,7 @@ class PaymentResource extends Resource
                 Tables\Columns\TextColumn::make('channel')->badge(),
                 Tables\Columns\TextColumn::make('received_on')->date()->sortable(),
                 Tables\Columns\BadgeColumn::make('status')
+                    ->formatStateUsing(fn ($state) => ucfirst($state))
                     ->colors(['success' => 'posted', 'danger' => 'reversed']),
             ])
             ->filters([

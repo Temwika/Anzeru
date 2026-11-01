@@ -19,6 +19,8 @@ class LoanApplicationResource extends Resource
     protected static ?string $model = LoanApplication::class;
     protected static ?string $navigationIcon = 'heroicon-o-document-text';
     protected static ?string $navigationLabel = 'Applications';
+    protected static ?string $modelLabel = 'application';
+    protected static ?string $pluralModelLabel = 'applications';
     protected static ?string $navigationGroup = 'Portfolio';
     protected static ?int $navigationSort = 2;
 
@@ -109,6 +111,7 @@ class LoanApplicationResource extends Resource
                 Tables\Columns\TextColumn::make('amount')->money('ZMW')->sortable(),
                 Tables\Columns\TextColumn::make('term')->suffix(' mo'),
                 Tables\Columns\BadgeColumn::make('status')
+                    ->formatStateUsing(fn ($state) => ucfirst($state))
                     ->colors([
                         'warning' => 'submitted',
                         'success' => 'approved',

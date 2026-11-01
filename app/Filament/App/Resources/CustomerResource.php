@@ -8,6 +8,8 @@ use App\Models\Customer;
 use App\Models\LoanGroup;
 use Filament\Forms;
 use Filament\Forms\Form;
+use Filament\Infolists\Components\ViewEntry;
+use Filament\Infolists\Infolist;
 use Filament\Notifications\Notification;
 use Filament\Resources\Resource;
 use Filament\Tables;
@@ -19,6 +21,8 @@ class CustomerResource extends Resource
     protected static ?string $model = Customer::class;
     protected static ?string $navigationIcon = 'heroicon-o-users';
     protected static ?string $navigationLabel = 'Borrowers';
+    protected static ?string $modelLabel = 'borrower';
+    protected static ?string $pluralModelLabel = 'borrowers';
     protected static ?string $navigationGroup = 'Portfolio';
     protected static ?int $navigationSort = 1;
 
@@ -110,6 +114,14 @@ class CustomerResource extends Resource
         ]);
     }
 
+    /** The view page: a borrower profile with their loans, applications and details. */
+    public static function infolist(Infolist $infolist): Infolist
+    {
+        return $infolist->schema([
+            ViewEntry::make('profile')->view('filament.app.customer-profile')->columnSpanFull(),
+        ]);
+    }
+
     public static function table(Table $table): Table
     {
         return $table
@@ -129,6 +141,7 @@ class CustomerResource extends Resource
                 Tables\Columns\TextColumn::make('phone')->searchable(),
                 Tables\Columns\TextColumn::make('branch.name')->label('Branch')->sortable(),
                 Tables\Columns\BadgeColumn::make('kyc_status')
+                    ->formatStateUsing(fn ($state) => ucfirst($state))
                     ->label('KYC')
                     ->colors([
                         'warning' => 'pending',

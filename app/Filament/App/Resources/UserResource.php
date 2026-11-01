@@ -19,6 +19,8 @@ class UserResource extends Resource
     protected static ?string $model = User::class;
     protected static ?string $navigationIcon = 'heroicon-o-user-group';
     protected static ?string $navigationLabel = 'Staff';
+    protected static ?string $modelLabel = 'staff member';
+    protected static ?string $pluralModelLabel = 'staff';
     protected static ?string $navigationGroup = 'Settings';
     protected static ?int $navigationSort = 3;
 
@@ -62,6 +64,7 @@ class UserResource extends Resource
                 Tables\Columns\TextColumn::make('full_name')->searchable()->sortable(),
                 Tables\Columns\TextColumn::make('email')->searchable(),
                 Tables\Columns\BadgeColumn::make('role')
+                    ->formatStateUsing(fn ($state) => ucfirst(str_replace('_', ' ', $state)))
                     ->colors([
                         'danger' => 'institution_admin',
                         'warning' => fn ($state) => in_array($state, ['credit_manager', 'credit_officer']),
