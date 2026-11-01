@@ -44,7 +44,7 @@ class UserResource extends Resource
                         'auditor' => 'Auditor',
                     ])->required(),
                 Forms\Components\TextInput::make('approval_limit')
-                    ->label('Approval Limit (ZMW)')->numeric()->default(0),
+                    ->label('Approval Limit (K)')->numeric()->default(0),
                 Forms\Components\Toggle::make('is_active')->default(true),
                 Forms\Components\Select::make('branch_ids')
                     ->label('Branch Access')

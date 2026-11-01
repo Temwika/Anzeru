@@ -38,8 +38,8 @@ class LoanProductResource extends Resource
                 Forms\Components\Select::make('repayment_frequency')
                     ->options(['daily' => 'Daily', 'weekly' => 'Weekly', 'fortnightly' => 'Fortnightly', 'monthly' => 'Monthly'])
                     ->required(),
-                Forms\Components\TextInput::make('min_amount')->numeric()->prefix('ZMW')->required(),
-                Forms\Components\TextInput::make('max_amount')->numeric()->prefix('ZMW')->required(),
+                Forms\Components\TextInput::make('min_amount')->numeric()->prefix('K')->required(),
+                Forms\Components\TextInput::make('max_amount')->numeric()->prefix('K')->required(),
                 Forms\Components\TextInput::make('min_term')->integer()->required(),
                 Forms\Components\TextInput::make('max_term')->integer()->required(),
                 Forms\Components\TextInput::make('processing_fee_pct')->label('Processing Fee %')->numeric()->default(0),

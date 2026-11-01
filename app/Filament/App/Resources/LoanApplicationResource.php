@@ -83,7 +83,7 @@ class LoanApplicationResource extends Resource
                     ->options(fn () => LoanProduct::where('is_active', true)->pluck('name', 'id'))
                     ->required()->reactive(),
                 Forms\Components\TextInput::make('amount')
-                    ->label('Amount (ZMW)')->numeric()->required(),
+                    ->label('Amount (K)')->numeric()->required(),
                 Forms\Components\TextInput::make('term')
                     ->label('Term (periods)')->integer()->required(),
                 Forms\Components\Textarea::make('purpose')->required()->columnSpanFull(),

@@ -6,6 +6,8 @@ use App\Filament\App\Resources\LoanResource\Pages;
 use App\Models\Loan;
 use Filament\Forms;
 use Filament\Forms\Form;
+use Filament\Infolists\Components\ViewEntry;
+use Filament\Infolists\Infolist;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
@@ -51,6 +53,14 @@ class LoanResource extends Resource
     public static function form(Form $form): Form
     {
         return $form->schema([]); // Loans are created from approved applications only
+    }
+
+    /** The view page: a statement of the loan with its schedule and payments. */
+    public static function infolist(Infolist $infolist): Infolist
+    {
+        return $infolist->schema([
+            ViewEntry::make('statement')->view('filament.app.loan-statement')->columnSpanFull(),
+        ]);
     }
 
     public static function table(Table $table): Table

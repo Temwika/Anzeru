@@ -245,6 +245,61 @@ a.ch-step-urgent:hover { background: rgb(220 149 18 / .16); border-color: rgb(24
 .fi-wi-stats-overview-stat:nth-child(4) { animation-delay: .18s; }
 .fi-wi-stats-overview-stat:nth-child(5) { animation-delay: .24s; }
 .fi-wi-stats-overview-stat:nth-child(6) { animation-delay: .3s; }
+/* Loan statement on the loan's view page */
+.ch-loan { display: grid; gap: 1.25rem; }
+.ch-loan-head { display: flex; flex-wrap: wrap; align-items: flex-start; justify-content: space-between; gap: 1rem; padding: 1.5rem 1.6rem; border-radius: 1.1rem; color: #fff;
+  background: radial-gradient(600px 220px at 100% 0%, rgb(242 107 29 / .28), transparent 60%), linear-gradient(135deg, var(--ch-navy-950), var(--ch-navy-800)); box-shadow: var(--ch-shadow-lift); }
+.ch-loan-eyebrow { font-size: .75rem; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: #fda56d; }
+.ch-loan-name { font-family: var(--ch-display); font-size: 1.6rem; font-weight: 800; letter-spacing: -.02em; margin-top: .2rem; }
+.ch-loan-meta { margin-top: .35rem; font-size: .875rem; color: #b8c4d8; }
+.ch-loan-tiles { display: grid; gap: .9rem; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); }
+.ch-tile { display: grid; gap: .2rem; padding: 1rem 1.15rem; border-radius: 1rem; background: #fff; box-shadow: var(--ch-shadow-card); outline: 1px solid var(--ch-line); }
+.ch-tile span { font-size: .78rem; font-weight: 600; color: #64748b; }
+.ch-tile strong { font-family: var(--ch-display); font-size: 1.35rem; font-weight: 800; letter-spacing: -.02em; color: var(--ch-navy-950); font-variant-numeric: tabular-nums; }
+.ch-tile small { font-size: .78rem; color: #64748b; }
+.ch-tile-alert { outline-color: #fecaca; background: linear-gradient(#fff, #fff5f5); }
+.ch-tile-alert strong { color: #b91c1c; }
+.ch-progress { padding: 1rem 1.15rem; border-radius: 1rem; background: #fff; box-shadow: var(--ch-shadow-card); outline: 1px solid var(--ch-line); }
+.ch-progress-row { display: flex; flex-wrap: wrap; justify-content: space-between; gap: .5rem; font-size: .875rem; color: #475569; margin-bottom: .6rem; }
+.ch-progress-row strong { color: var(--ch-navy-950); }
+.ch-progress-track { height: .6rem; border-radius: 999px; background: #e9eef5; overflow: hidden; }
+.ch-progress-fill { height: 100%; border-radius: inherit; background: linear-gradient(90deg, #2f6be0, var(--ch-orange), #f4b740); animation: ch-grow 1s var(--ch-ease) both; transform-origin: left; }
+@keyframes ch-grow { from { transform: scaleX(0); } }
+.ch-panel { padding: 1.1rem 1.15rem 1.25rem; border-radius: 1.1rem; background: #fff; box-shadow: var(--ch-shadow-card); outline: 1px solid var(--ch-line); }
+.ch-panel h3 { font-family: var(--ch-display); font-weight: 700; font-size: 1rem; color: var(--ch-navy-950); margin-bottom: .75rem; }
+.ch-empty { font-size: .875rem; color: #64748b; }
+.ch-table-wrap { overflow-x: auto; margin: 0 -.25rem; }
+.ch-table { width: 100%; border-collapse: collapse; font-size: .85rem; white-space: nowrap; }
+.ch-table th { text-align: left; font-size: .72rem; font-weight: 600; letter-spacing: .04em; text-transform: uppercase; color: #64748b; padding: .55rem .6rem; border-bottom: 1px solid var(--ch-line); }
+.ch-table td { padding: .6rem; border-bottom: 1px solid #f1f5f9; color: #334155; }
+.ch-table .num { text-align: right; font-variant-numeric: tabular-nums; }
+.ch-table .mono { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: .8rem; }
+.ch-table tbody tr:hover td { background: #f8fafc; }
+.ch-table tr.is-late td { background: #fff7f7; }
+.ch-table tr.is-next td { background: #fff7ef; }
+.ch-table tr.is-next td:first-child { box-shadow: inset 3px 0 0 var(--ch-orange); }
+.ch-pill { display: inline-flex; align-items: center; padding: .2rem .6rem; border-radius: 999px; font-size: .74rem; font-weight: 600; line-height: 1.2; white-space: nowrap; }
+.ch-pill-success { background: #dcfce7; color: #166534; }
+.ch-pill-warning { background: #fef3c7; color: #92400e; }
+.ch-pill-danger { background: #fee2e2; color: #991b1b; }
+.ch-pill-gray { background: #eef2f7; color: #475569; }
+.ch-loan-head .ch-pill { box-shadow: 0 0 0 1px rgb(255 255 255 / .2); }
+.dark .ch-tile, .dark .ch-progress, .dark .ch-panel { background: #111a2b; outline-color: rgb(255 255 255 / .07); }
+.dark .ch-tile strong, .dark .ch-panel h3, .dark .ch-progress-row strong { color: #fff; }
+.dark .ch-tile span, .dark .ch-tile small, .dark .ch-empty, .dark .ch-table th { color: #9aa8bf; }
+.dark .ch-tile-alert { background: linear-gradient(#111a2b, #2a1418); outline-color: rgb(248 113 113 / .3); }
+.dark .ch-tile-alert strong { color: #fca5a5; }
+.dark .ch-progress-row { color: #b8c4d8; }
+.dark .ch-progress-track { background: rgb(255 255 255 / .08); }
+.dark .ch-table th, .dark .ch-table td { border-color: rgb(255 255 255 / .06); color: #cbd5e1; }
+.dark .ch-table tbody tr:hover td { background: rgb(255 255 255 / .03); }
+.dark .ch-table tr.is-late td { background: rgb(239 68 68 / .08); }
+.dark .ch-table tr.is-next td { background: rgb(242 107 29 / .08); }
+.dark .ch-pill-success { background: rgb(34 197 94 / .15); color: #86efac; }
+.dark .ch-pill-warning { background: rgb(245 158 11 / .15); color: #fcd34d; }
+.dark .ch-pill-danger { background: rgb(239 68 68 / .15); color: #fca5a5; }
+.dark .ch-pill-gray { background: rgb(255 255 255 / .08); color: #cbd5e1; }
+
 @media (prefers-reduced-motion: reduce) { *, *::before { animation: none !important; transition: none !important; } }
 
 /* More contrast for those who ask their system for it. */

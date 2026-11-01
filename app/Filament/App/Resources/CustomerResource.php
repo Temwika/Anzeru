@@ -98,7 +98,7 @@ class CustomerResource extends Resource
                 ->columns(2)
                 ->schema([
                     Forms\Components\TextInput::make('monthly_income')
-                        ->numeric()->prefix('ZMW')->required(),
+                        ->numeric()->prefix('K')->required(),
                     Forms\Components\Select::make('group_id')
                         ->label('Group')
                         ->options(fn () => LoanGroup::pluck('name', 'id'))
